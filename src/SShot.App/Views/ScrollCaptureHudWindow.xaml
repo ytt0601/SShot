@@ -1,0 +1,17 @@
+<Window x:Class="SShot.App.Views.ScrollCaptureHudWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:resources="clr-namespace:SShot.App.Resources"
+        Title="SShot" Width="280" Height="130"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual">
+    <StackPanel Margin="12">
+        <TextBlock x:Name="StatusText"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,10" />
+        <Button x:Name="StopButton" Content="{x:Static resources:Strings.StopAndStitchButton}" Click="OnStopClick" Padding="8,4" />
+    </StackPanel>
+</Window>

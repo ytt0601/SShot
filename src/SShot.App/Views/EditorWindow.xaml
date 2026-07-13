@@ -1,0 +1,287 @@
+<Window x:Class="SShot.App.Views.EditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:resources="clr-namespace:SShot.App.Resources"
+        Title="{x:Static resources:Strings.EditorWindowTitle}" Height="760" Width="1140"
+        WindowStartupLocation="CenterScreen">
+    <Window.InputBindings>
+        <KeyBinding Command="{Binding UndoCommand}" Key="Z" Modifiers="Control" />
+        <KeyBinding Command="{Binding RedoCommand}" Key="Y" Modifiers="Control" />
+    </Window.InputBindings>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Category rail: same construction as MainWindow's sidebar (NavIconButtonStyle on
+             ThemeChromeBackground), so the editor's navigation matches the launch screen, plus a
+             caption under each icon - unlike MainWindow's rail, which relies on ToolTip alone.
+             Column width is Auto (not MainWindow's fixed 52px) so it grows to fit whichever
+             caption is widest under either UI language. -->
+        <Border Grid.Column="0" Background="{DynamicResource ThemeChromeBackground}">
+            <StackPanel x:Name="CategoryRail" Margin="8,16" HorizontalAlignment="Center">
+                <Button Style="{StaticResource NavIconButtonStyle}" Click="OnCategoryButtonClick" Tag="Tools"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.CategoryTools}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconCursorSelect}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.CategoryTools}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavIconButtonStyle}" Click="OnCategoryButtonClick" Tag="MosaicBlur"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.CategoryMosaicBlur}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconMosaicTool}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.CategoryMosaicBlur}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavIconButtonStyle}" Click="OnCategoryButtonClick" Tag="Color"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.CategoryColor}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconPalette}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.CategoryColor}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavIconButtonStyle}" Click="OnCategoryButtonClick" Tag="Arrange"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.CategoryArrange}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconLayers}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.CategoryArrange}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <!-- Undo/Redo are used often enough that they stay directly on the rail (bound
+                     straight to the commands) instead of living behind a togglable category tab
+                     like the buttons below. -->
+                <Button Style="{StaticResource NavIconButtonStyle}" Command="{Binding UndoCommand}"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.UndoTooltip}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconUndo}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.UndoButton}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavIconButtonStyle}" Command="{Binding RedoCommand}"
+                        Margin="0,0,0,4" MinWidth="60" ToolTip="{x:Static resources:Strings.RedoTooltip}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRedo}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.RedoButton}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Border Height="1" Margin="4,0,4,4" Background="{DynamicResource ThemeChromeForeground}" Opacity="0.35" />
+                <Button Style="{StaticResource NavIconButtonStyle}" Click="OnCategoryButtonClick" Tag="File"
+                        MinWidth="60" ToolTip="{x:Static resources:Strings.CategoryFile}">
+                    <StackPanel>
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSave}" HorizontalAlignment="Center" />
+                        <TextBlock Text="{x:Static resources:Strings.CategoryFile}" FontSize="9.5" Margin="0,4,0,0"
+                                   MaxWidth="52" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <DockPanel Grid.Column="1">
+            <!-- Detail strip: shows the active category's tools as icon+label chips
+                 (SurfaceIconButtonStyle, same bordered surface style as the Edit/Copy/Save row
+                 under the capture preview, just with a visible TextBlock added next to the icon). -->
+            <Border x:Name="CategoryDetailPanel" DockPanel.Dock="Top" Visibility="Collapsed"
+                    Background="{DynamicResource ThemeSurfaceBackground}"
+                    BorderBrush="{DynamicResource ThemeSurfaceBorder}" BorderThickness="0,0,0,1">
+                <Grid x:Name="CategoryPanelHost" Margin="10,8">
+                    <WrapPanel Tag="Tools" Visibility="Collapsed">
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Select" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolSelect}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconCursorSelect}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolSelect}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Rectangle" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolRectangle}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRectangleTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolRectangle}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Ellipse" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolEllipse}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconEllipseTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolEllipse}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Arrow" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolArrow}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconArrowTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolArrow}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Freehand" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolFreehand}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconPenTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolFreehand}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Highlighter" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolHighlighter}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconHighlighterTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolHighlighter}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Text" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolText}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconTextTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolText}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="StepStamp" Margin="0,0,10,0" ToolTip="{x:Static resources:Strings.ToolStepStamp}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconStepStampTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolStepStamp}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Width="1" Margin="0,4,10,4" Background="{DynamicResource ThemeSurfaceBorder}" />
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Crop" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.ToolCrop}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconCropTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolCrop}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnCropByCoordinatesClick" ToolTip="{x:Static resources:Strings.CropByCoordinatesButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconCropTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.CropByCoordinatesButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+
+                    <WrapPanel Tag="MosaicBlur" Visibility="Collapsed">
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Mosaic" Margin="0,0,8,0" ToolTip="{x:Static resources:Strings.ToolMosaic}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconMosaicTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolMosaic}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="{x:Static resources:Strings.MosaicIntensityLabel}" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,0,4,0" />
+                        <Slider x:Name="MosaicIntensitySlider" Width="90" VerticalAlignment="Center"
+                                Minimum="4" Maximum="40" TickFrequency="1" IsSnapToTickEnabled="True"
+                                Value="{Binding MosaicBlockSize}"
+                                PreviewMouseDown="OnIntensitySliderPreviewMouseDown"
+                                PreviewMouseUp="OnIntensitySliderPreviewMouseUp"
+                                ValueChanged="OnMosaicIntensityValueChanged" Margin="0,0,4,0" />
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnApplyMosaicWholeClick" Margin="0,0,10,0" ToolTip="{x:Static resources:Strings.ApplyMosaicWholeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRegion}" />
+                                <TextBlock Text="{x:Static resources:Strings.ApplyMosaicWholeButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Border Width="1" Margin="0,4,10,4" Background="{DynamicResource ThemeSurfaceBorder}" />
+
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnToolButtonClick" Tag="Blur" Margin="0,0,8,0" ToolTip="{x:Static resources:Strings.ToolBlur}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconBlurTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.ToolBlur}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="{x:Static resources:Strings.BlurIntensityLabel}" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondary}" Margin="0,0,4,0" />
+                        <Slider x:Name="BlurIntensitySlider" Width="90" VerticalAlignment="Center"
+                                Minimum="2" Maximum="40"
+                                Value="{Binding BlurRadius}"
+                                PreviewMouseDown="OnIntensitySliderPreviewMouseDown"
+                                PreviewMouseUp="OnIntensitySliderPreviewMouseUp"
+                                ValueChanged="OnBlurIntensityValueChanged" Margin="0,0,4,0" />
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnApplyBlurWholeClick" ToolTip="{x:Static resources:Strings.ApplyBlurWholeButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRegion}" />
+                                <TextBlock Text="{x:Static resources:Strings.ApplyBlurWholeButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+
+                    <WrapPanel Tag="Color" Visibility="Collapsed">
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="Red" Click="OnColorSwatchClick" Tag="Red" />
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="OrangeRed" Click="OnColorSwatchClick" Tag="OrangeRed" />
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="Gold" Click="OnColorSwatchClick" Tag="Gold" />
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="LimeGreen" Click="OnColorSwatchClick" Tag="LimeGreen" />
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="DeepSkyBlue" Click="OnColorSwatchClick" Tag="DeepSkyBlue" />
+                        <Button Width="22" Height="22" Margin="0,0,6,0" Background="Black" Click="OnColorSwatchClick" Tag="Black" />
+                        <Button Width="22" Height="22" Background="White" Click="OnColorSwatchClick" Tag="White" />
+                    </WrapPanel>
+
+                    <WrapPanel Tag="Arrange" Visibility="Collapsed">
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnDeleteClick" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.DeleteButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconDeleteTool}" />
+                                <TextBlock Text="{x:Static resources:Strings.DeleteButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnBringToFrontClick" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.BringToFrontButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconBringToFront}" />
+                                <TextBlock Text="{x:Static resources:Strings.BringToFrontButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnSendToBackClick" ToolTip="{x:Static resources:Strings.SendToBackButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSendToBack}" />
+                                <TextBlock Text="{x:Static resources:Strings.SendToBackButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+
+                    <WrapPanel Tag="File" Visibility="Collapsed">
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnCopyClick" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.CopyToClipboardButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClip}" />
+                                <TextBlock Text="{x:Static resources:Strings.CopyToClipboardButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnSaveClick" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.SaveToFileButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSave}" />
+                                <TextBlock Text="{x:Static resources:Strings.SaveToFileButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnSaveAsClick" Margin="0,0,4,0" ToolTip="{x:Static resources:Strings.SaveAsButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSaveAs}" />
+                                <TextBlock Text="{x:Static resources:Strings.SaveAsButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnOverwriteSaveClick" Margin="0,0,10,0" ToolTip="{x:Static resources:Strings.OverwriteSaveButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconOverwriteSave}" />
+                                <TextBlock Text="{x:Static resources:Strings.OverwriteSaveButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Width="1" Margin="0,4,10,4" Background="{DynamicResource ThemeSurfaceBorder}" />
+                        <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnCloseClick" ToolTip="{x:Static resources:Strings.CloseButton}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClose}" />
+                                <TextBlock Text="{x:Static resources:Strings.CloseButton}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <TextBlock DockPanel.Dock="Top" x:Name="ToolStatusText" Margin="12,8,12,4" Foreground="{DynamicResource ThemeTextSecondary}" />
+
+            <Border Background="#FF2B2B2B">
+                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" Margin="16">
+                    <Canvas x:Name="EditorCanvas"
+                            Background="Transparent"
+                            Focusable="True"
+                            MouseLeftButtonDown="OnCanvasMouseLeftButtonDown"
+                            MouseMove="OnCanvasMouseMove"
+                            MouseLeftButtonUp="OnCanvasMouseLeftButtonUp"
+                            KeyDown="OnCanvasKeyDown">
+                        <Image x:Name="BaseImageView" Stretch="None" />
+                    </Canvas>
+                </Viewbox>
+            </Border>
+        </DockPanel>
+    </Grid>
+</Window>

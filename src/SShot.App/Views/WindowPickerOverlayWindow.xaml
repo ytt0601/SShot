@@ -1,0 +1,30 @@
+<Window x:Class="SShot.App.Views.WindowPickerOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Cursor="Cross">
+    <Canvas x:Name="RootCanvas" Background="Transparent">
+        <Rectangle x:Name="HighlightBorder"
+                   Stroke="DeepSkyBlue"
+                   StrokeThickness="3"
+                   Fill="#3080D8FF"
+                   Visibility="Collapsed"
+                   IsHitTestVisible="False" />
+        <Border x:Name="HintBorder"
+                Background="#C0202020"
+                CornerRadius="3"
+                Padding="8,4"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="HintText"
+                       Foreground="White"
+                       FontSize="12" />
+        </Border>
+    </Canvas>
+</Window>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="SShot"
+           Manufacturer="SShot"
+           Version="0.1.0.0"
+           UpgradeCode="5F3DDE94-D3D7-48E6-B51F-9DA409897D54"
+           Language="1041"
+           Codepage="UTF-8"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="SShot Setup" Keywords="Installer" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of SShot is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(var.RepoRoot)\assets\icons\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Feature Id="MainFeature" Title="SShot" Level="1">
+      <ComponentRef Id="AppExecutable" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="SShot" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="SShot" />
+    </StandardDirectory>
+
+    <!--
+      A single component for the whole app because the app itself is published as one
+      self-contained, single-file exe (PublishSingleFile) - the same artifact the portable
+      distribution ships, just placed under Program Files with Start Menu integration and a
+      real uninstall entry instead of being a loose file. See build/publish-portable.ps1.
+    -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppExecutable" Guid="*">
+        <File Id="SShotAppExe" Source="$(var.PublishDir)\SShot.App.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="*">
+        <Shortcut Id="StartMenuShortcut"
+                  Name="SShot"
+                  Description="Windows screenshot tool"
+                  Target="[INSTALLFOLDER]SShot.App.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\SShot" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+  </Package>
+</Wix>

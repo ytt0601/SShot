@@ -1,0 +1,28 @@
+## .NET
+bin/
+obj/
+out/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+## Publish output
+publish/
+*.pubxml.user
+
+## WiX
+installer/wix/bin/
+installer/wix/obj/
+*.wixpdb
+*.msi
+*.cab
+
+## App runtime data (do not ship user machine settings)
+*.log
+
+## Claude Code local (machine-specific) settings
+.claude/settings.local.json

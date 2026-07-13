@@ -1,0 +1,24 @@
+﻿<Application x:Class="SShot.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SShot.App"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Static: shared styles + icon geometries never change with the color theme. -->
+                <ResourceDictionary Source="Resources/Themes/AppStyles.xaml" />
+                <ResourceDictionary Source="Resources/Icons/IconGeometries.xaml" />
+                <!-- Default theme so DynamicResource lookups never miss before ThemeService.Apply
+                     runs in App.OnStartup (immediately replaced with the saved ColorTheme, but a
+                     window could theoretically be constructed before that - see App.xaml.cs). -->
+                <ResourceDictionary Source="Resources/Themes/Theme.Azure.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="{x:Type Window}">
+                <Setter Property="Background" Value="{DynamicResource ThemeAppBackground}" />
+                <Setter Property="FontFamily" Value="Segoe UI, Yu Gothic UI" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

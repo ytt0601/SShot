@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="CaptureFullScreenButton" xml:space="preserve"><value>Capture Full Screen</value></data>
+  <data name="CaptureRegionButton" xml:space="preserve"><value>Select Region</value></data>
+  <data name="CaptureWindowButton" xml:space="preserve"><value>Select Window</value></data>
+  <data name="CaptureScrollingButton" xml:space="preserve"><value>Scrolling Capture</value></data>
+  <data name="WindowPickerHintDefault" xml:space="preserve"><value>Click to select · Hold Ctrl to target a smaller window inside the app · Esc to cancel</value></data>
+  <data name="WindowPickerHintChildMode" xml:space="preserve"><value>Ctrl: targeting a window inside the app · Click to capture · Esc to cancel</value></data>
+  <data name="OpenEditorButton" xml:space="preserve"><value>Edit</value></data>
+  <data name="CopyToClipboardButton" xml:space="preserve"><value>Copy to Clipboard</value></data>
+  <data name="SaveToFileButton" xml:space="preserve"><value>Save to File</value></data>
+  <data name="OpenSettingsButton" xml:space="preserve"><value>Settings</value></data>
+
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>SShot Settings</value></data>
+  <data name="SaveFolderLabel" xml:space="preserve"><value>Save Folder</value></data>
+  <data name="BrowseButton" xml:space="preserve"><value>Browse...</value></data>
+  <data name="SaveAsJpegCheckbox" xml:space="preserve"><value>Save as JPEG (default is PNG)</value></data>
+  <data name="AutoStartCheckbox" xml:space="preserve"><value>Launch automatically when Windows starts</value></data>
+  <data name="UiLanguageLabel" xml:space="preserve"><value>Display Language</value></data>
+  <data name="HotkeysSectionLabel" xml:space="preserve"><value>Global Hotkeys</value></data>
+  <data name="HotkeyHintText" xml:space="preserve"><value>Example: Ctrl+Shift+R (restart required to apply changes)</value></data>
+  <data name="SaveButton" xml:space="preserve"><value>Save</value></data>
+  <data name="CloseButton" xml:space="preserve"><value>Close</value></data>
+
+  <data name="UiLayoutModeLabel" xml:space="preserve"><value>Layout</value></data>
+  <data name="UiLayoutModeSidebar" xml:space="preserve"><value>Sidebar</value></data>
+  <data name="UiLayoutModeFloating" xml:space="preserve"><value>Floating Toolbar</value></data>
+  <data name="UiLayoutModeHintText" xml:space="preserve"><value>Restart required to apply changes</value></data>
+
+  <data name="ColorThemeLabel" xml:space="preserve"><value>Color Theme</value></data>
+  <data name="ThemeAzure" xml:space="preserve"><value>Azure</value></data>
+  <data name="ThemeEmerald" xml:space="preserve"><value>Emerald</value></data>
+  <data name="ThemeSunset" xml:space="preserve"><value>Sunset</value></data>
+  <data name="ThemeGrape" xml:space="preserve"><value>Grape</value></data>
+  <data name="ThemeAmber" xml:space="preserve"><value>Amber</value></data>
+  <data name="ThemeCrimson" xml:space="preserve"><value>Crimson</value></data>
+  <data name="ThemeOcean" xml:space="preserve"><value>Ocean</value></data>
+  <data name="ThemeRose" xml:space="preserve"><value>Rose</value></data>
+  <data name="ThemeSlateDark" xml:space="preserve"><value>Slate Dark</value></data>
+  <data name="ThemeMidnight" xml:space="preserve"><value>Midnight</value></data>
+
+  <data name="NavCaptureSectionLabel" xml:space="preserve"><value>Capture</value></data>
+  <data name="NavHistorySectionLabel" xml:space="preserve"><value>History</value></data>
+  <data name="HideToolbarButton" xml:space="preserve"><value>Hide Toolbar</value></data>
+
+  <data name="ScrollCaptureStatusFormat" xml:space="preserve"><value>Capturing scroll... ({0} frames)&#10;Click "Stop &amp; Stitch" when done</value></data>
+  <data name="StopAndStitchButton" xml:space="preserve"><value>Stop &amp; Stitch</value></data>
+
+  <data name="EditorWindowTitle" xml:space="preserve"><value>SShot Editor</value></data>
+  <data name="ToolSelect" xml:space="preserve"><value>Select</value></data>
+  <data name="ToolRectangle" xml:space="preserve"><value>Rectangle</value></data>
+  <data name="ToolEllipse" xml:space="preserve"><value>Ellipse</value></data>
+  <data name="ToolArrow" xml:space="preserve"><value>Arrow</value></data>
+  <data name="ToolFreehand" xml:space="preserve"><value>Pen</value></data>
+  <data name="ToolHighlighter" xml:space="preserve"><value>Highlighter</value></data>
+  <data name="ToolText" xml:space="preserve"><value>Text</value></data>
+  <data name="ToolStepStamp" xml:space="preserve"><value>Step Stamp</value></data>
+  <data name="ToolMosaic" xml:space="preserve"><value>Mosaic</value></data>
+  <data name="ToolBlur" xml:space="preserve"><value>Blur</value></data>
+  <data name="ToolCrop" xml:space="preserve"><value>Crop</value></data>
+  <data name="CropByCoordinatesButton" xml:space="preserve"><value>Crop by Coordinates</value></data>
+  <data name="CropCoordinatesWindowTitle" xml:space="preserve"><value>Crop by Coordinates</value></data>
+  <data name="CropXLabel" xml:space="preserve"><value>X:</value></data>
+  <data name="CropYLabel" xml:space="preserve"><value>Y:</value></data>
+  <data name="CropWidthLabel" xml:space="preserve"><value>Width:</value></data>
+  <data name="CropHeightLabel" xml:space="preserve"><value>Height:</value></data>
+  <data name="CropInvalidRangeMessage" xml:space="preserve"><value>The specified range is outside the image bounds. Please check the values.</value></data>
+  <data name="OkButton" xml:space="preserve"><value>OK</value></data>
+  <data name="CancelButton" xml:space="preserve"><value>Cancel</value></data>
+  <data name="MosaicIntensityLabel" xml:space="preserve"><value>Mosaic intensity:</value></data>
+  <data name="BlurIntensityLabel" xml:space="preserve"><value>Blur intensity:</value></data>
+  <data name="ApplyMosaicWholeButton" xml:space="preserve"><value>Mosaic Whole Image</value></data>
+  <data name="ApplyBlurWholeButton" xml:space="preserve"><value>Blur Whole Image</value></data>
+  <data name="DeleteButton" xml:space="preserve"><value>Delete</value></data>
+  <data name="BringToFrontButton" xml:space="preserve"><value>Bring to Front</value></data>
+  <data name="SendToBackButton" xml:space="preserve"><value>Send to Back</value></data>
+  <data name="UndoButton" xml:space="preserve"><value>Undo</value></data>
+  <data name="RedoButton" xml:space="preserve"><value>Redo</value></data>
+  <data name="ToolStatusFormat" xml:space="preserve"><value>Tool: {0}</value></data>
+  <data name="SavedMessageFormat" xml:space="preserve"><value>Saved: {0}</value></data>
+
+  <data name="CategoryTools" xml:space="preserve"><value>Tools</value></data>
+  <data name="CategoryMosaicBlur" xml:space="preserve"><value>Mosaic / Blur</value></data>
+  <data name="CategoryColor" xml:space="preserve"><value>Color</value></data>
+  <data name="CategoryArrange" xml:space="preserve"><value>Arrange</value></data>
+  <data name="CategoryFile" xml:space="preserve"><value>File</value></data>
+  <data name="SaveAsButton" xml:space="preserve"><value>Save As...</value></data>
+  <data name="OverwriteSaveButton" xml:space="preserve"><value>Overwrite Save</value></data>
+  <data name="SaveAsDialogTitle" xml:space="preserve"><value>Save As</value></data>
+  <data name="ImageFileDialogFilter" xml:space="preserve"><value>PNG Image (*.png)|*.png|JPEG Image (*.jpg;*.jpeg)|*.jpg;*.jpeg</value></data>
+  <data name="UndoTooltip" xml:space="preserve"><value>Undo (Ctrl+Z)</value></data>
+  <data name="RedoTooltip" xml:space="preserve"><value>Redo (Ctrl+Y)</value></data>
+
+  <data name="ShowWindowMenuItem" xml:space="preserve"><value>Show Window</value></data>
+  <data name="ExitMenuItem" xml:space="preserve"><value>Exit</value></data>
+
+  <data name="ModeNameFullScreen" xml:space="preserve"><value>Full Screen</value></data>
+  <data name="ModeNameRegion" xml:space="preserve"><value>Region</value></data>
+  <data name="ModeNameWindow" xml:space="preserve"><value>Window</value></data>
+  <data name="ModeNameScrolling" xml:space="preserve"><value>Scrolling</value></data>
+  <data name="ClipboardCopiedMessage" xml:space="preserve"><value>Copied to clipboard</value></data>
+  <data name="EditAppliedMessage" xml:space="preserve"><value>Edits applied</value></data>
+  <data name="HistoryOpenedMessageFormat" xml:space="preserve"><value>Opened from history ({0:HH:mm:ss})</value></data>
+  <data name="CaptureCancelledMessageFormat" xml:space="preserve"><value>{0} capture was cancelled</value></data>
+  <data name="CaptureSucceededMessageFormat" xml:space="preserve"><value>Captured {0} ({1}x{2})</value></data>
+
+  <data name="AlreadyRunningMessage" xml:space="preserve"><value>SShot is already running.</value></data>
+  <data name="UnexpectedErrorMessageFormat" xml:space="preserve"><value>Something went wrong and the action couldn't complete:
+{0}</value></data>
+</root>

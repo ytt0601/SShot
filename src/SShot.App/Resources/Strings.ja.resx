@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="CaptureFullScreenButton" xml:space="preserve"><value>フルスクリーン撮影</value></data>
+  <data name="CaptureRegionButton" xml:space="preserve"><value>範囲選択</value></data>
+  <data name="CaptureWindowButton" xml:space="preserve"><value>ウィンドウ選択</value></data>
+  <data name="CaptureScrollingButton" xml:space="preserve"><value>スクロールキャプチャ</value></data>
+  <data name="WindowPickerHintDefault" xml:space="preserve"><value>クリックで選択 ・ Ctrlキー押下でアプリ内の小さいウィンドウを選択 ・ Escで中止</value></data>
+  <data name="WindowPickerHintChildMode" xml:space="preserve"><value>Ctrl: アプリ内の小さいウィンドウを選択中 ・ クリックで撮影 ・ Escで中止</value></data>
+  <data name="OpenEditorButton" xml:space="preserve"><value>編集</value></data>
+  <data name="CopyToClipboardButton" xml:space="preserve"><value>クリップボードにコピー</value></data>
+  <data name="SaveToFileButton" xml:space="preserve"><value>ファイルに保存</value></data>
+  <data name="OpenSettingsButton" xml:space="preserve"><value>設定</value></data>
+
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>SShot 設定</value></data>
+  <data name="SaveFolderLabel" xml:space="preserve"><value>保存先フォルダ</value></data>
+  <data name="BrowseButton" xml:space="preserve"><value>参照...</value></data>
+  <data name="SaveAsJpegCheckbox" xml:space="preserve"><value>JPEGで保存する(既定はPNG)</value></data>
+  <data name="AutoStartCheckbox" xml:space="preserve"><value>Windows起動時に自動的に起動する</value></data>
+  <data name="UiLanguageLabel" xml:space="preserve"><value>表示言語</value></data>
+  <data name="HotkeysSectionLabel" xml:space="preserve"><value>グローバルホットキー</value></data>
+  <data name="HotkeyHintText" xml:space="preserve"><value>例: Ctrl+Shift+R (変更の反映にはアプリの再起動が必要です)</value></data>
+  <data name="SaveButton" xml:space="preserve"><value>保存</value></data>
+  <data name="CloseButton" xml:space="preserve"><value>閉じる</value></data>
+
+  <data name="UiLayoutModeLabel" xml:space="preserve"><value>レイアウト</value></data>
+  <data name="UiLayoutModeSidebar" xml:space="preserve"><value>サイドバー</value></data>
+  <data name="UiLayoutModeFloating" xml:space="preserve"><value>フローティングツールバー</value></data>
+  <data name="UiLayoutModeHintText" xml:space="preserve"><value>変更の反映にはアプリの再起動が必要です</value></data>
+
+  <data name="ColorThemeLabel" xml:space="preserve"><value>配色テーマ</value></data>
+  <data name="ThemeAzure" xml:space="preserve"><value>アズール</value></data>
+  <data name="ThemeEmerald" xml:space="preserve"><value>エメラルド</value></data>
+  <data name="ThemeSunset" xml:space="preserve"><value>サンセット</value></data>
+  <data name="ThemeGrape" xml:space="preserve"><value>グレープ</value></data>
+  <data name="ThemeAmber" xml:space="preserve"><value>アンバー</value></data>
+  <data name="ThemeCrimson" xml:space="preserve"><value>クリムゾン</value></data>
+  <data name="ThemeOcean" xml:space="preserve"><value>オーシャン</value></data>
+  <data name="ThemeRose" xml:space="preserve"><value>ローズ</value></data>
+  <data name="ThemeSlateDark" xml:space="preserve"><value>スレートダーク</value></data>
+  <data name="ThemeMidnight" xml:space="preserve"><value>ミッドナイト</value></data>
+
+  <data name="NavCaptureSectionLabel" xml:space="preserve"><value>キャプチャ</value></data>
+  <data name="NavHistorySectionLabel" xml:space="preserve"><value>履歴</value></data>
+  <data name="HideToolbarButton" xml:space="preserve"><value>ツールバーを隠す</value></data>
+
+  <data name="ScrollCaptureStatusFormat" xml:space="preserve"><value>スクロールキャプチャ中... ({0} フレーム)&#10;終わったら「停止して結合」を押してください</value></data>
+  <data name="StopAndStitchButton" xml:space="preserve"><value>停止して結合</value></data>
+
+  <data name="EditorWindowTitle" xml:space="preserve"><value>SShot エディター</value></data>
+  <data name="ToolSelect" xml:space="preserve"><value>選択</value></data>
+  <data name="ToolRectangle" xml:space="preserve"><value>矩形</value></data>
+  <data name="ToolEllipse" xml:space="preserve"><value>楕円</value></data>
+  <data name="ToolArrow" xml:space="preserve"><value>矢印</value></data>
+  <data name="ToolFreehand" xml:space="preserve"><value>ペン</value></data>
+  <data name="ToolHighlighter" xml:space="preserve"><value>蛍光ペン</value></data>
+  <data name="ToolText" xml:space="preserve"><value>テキスト</value></data>
+  <data name="ToolStepStamp" xml:space="preserve"><value>番号スタンプ</value></data>
+  <data name="ToolMosaic" xml:space="preserve"><value>モザイク</value></data>
+  <data name="ToolBlur" xml:space="preserve"><value>ぼかし</value></data>
+  <data name="ToolCrop" xml:space="preserve"><value>トリミング</value></data>
+  <data name="CropByCoordinatesButton" xml:space="preserve"><value>座標指定でトリミング</value></data>
+  <data name="CropCoordinatesWindowTitle" xml:space="preserve"><value>座標を指定してトリミング</value></data>
+  <data name="CropXLabel" xml:space="preserve"><value>X:</value></data>
+  <data name="CropYLabel" xml:space="preserve"><value>Y:</value></data>
+  <data name="CropWidthLabel" xml:space="preserve"><value>幅:</value></data>
+  <data name="CropHeightLabel" xml:space="preserve"><value>高さ:</value></data>
+  <data name="CropInvalidRangeMessage" xml:space="preserve"><value>指定した範囲が画像の範囲外です。値を確認してください。</value></data>
+  <data name="OkButton" xml:space="preserve"><value>OK</value></data>
+  <data name="CancelButton" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="MosaicIntensityLabel" xml:space="preserve"><value>モザイク強度:</value></data>
+  <data name="BlurIntensityLabel" xml:space="preserve"><value>ぼかし強度:</value></data>
+  <data name="ApplyMosaicWholeButton" xml:space="preserve"><value>画像全体にモザイク</value></data>
+  <data name="ApplyBlurWholeButton" xml:space="preserve"><value>画像全体をぼかす</value></data>
+  <data name="DeleteButton" xml:space="preserve"><value>削除</value></data>
+  <data name="BringToFrontButton" xml:space="preserve"><value>最前面</value></data>
+  <data name="SendToBackButton" xml:space="preserve"><value>最背面</value></data>
+  <data name="UndoButton" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="RedoButton" xml:space="preserve"><value>やり直す</value></data>
+  <data name="ToolStatusFormat" xml:space="preserve"><value>ツール: {0}</value></data>
+  <data name="SavedMessageFormat" xml:space="preserve"><value>保存しました: {0}</value></data>
+
+  <data name="CategoryTools" xml:space="preserve"><value>ツール</value></data>
+  <data name="CategoryMosaicBlur" xml:space="preserve"><value>モザイク / ぼかし</value></data>
+  <data name="CategoryColor" xml:space="preserve"><value>色</value></data>
+  <data name="CategoryArrange" xml:space="preserve"><value>配置</value></data>
+  <data name="CategoryFile" xml:space="preserve"><value>ファイル</value></data>
+  <data name="SaveAsButton" xml:space="preserve"><value>名前を付けて保存...</value></data>
+  <data name="OverwriteSaveButton" xml:space="preserve"><value>上書き保存</value></data>
+  <data name="SaveAsDialogTitle" xml:space="preserve"><value>名前を付けて保存</value></data>
+  <data name="ImageFileDialogFilter" xml:space="preserve"><value>PNG画像 (*.png)|*.png|JPEG画像 (*.jpg;*.jpeg)|*.jpg;*.jpeg</value></data>
+  <data name="UndoTooltip" xml:space="preserve"><value>元に戻す (Ctrl+Z)</value></data>
+  <data name="RedoTooltip" xml:space="preserve"><value>やり直す (Ctrl+Y)</value></data>
+
+  <data name="ShowWindowMenuItem" xml:space="preserve"><value>ウィンドウを表示</value></data>
+  <data name="ExitMenuItem" xml:space="preserve"><value>終了</value></data>
+
+  <data name="ModeNameFullScreen" xml:space="preserve"><value>フルスクリーン</value></data>
+  <data name="ModeNameRegion" xml:space="preserve"><value>範囲選択</value></data>
+  <data name="ModeNameWindow" xml:space="preserve"><value>ウィンドウ</value></data>
+  <data name="ModeNameScrolling" xml:space="preserve"><value>スクロール</value></data>
+  <data name="ClipboardCopiedMessage" xml:space="preserve"><value>クリップボードにコピーしました</value></data>
+  <data name="EditAppliedMessage" xml:space="preserve"><value>編集内容を反映しました</value></data>
+  <data name="HistoryOpenedMessageFormat" xml:space="preserve"><value>履歴を開きました ({0:HH:mm:ss})</value></data>
+  <data name="CaptureCancelledMessageFormat" xml:space="preserve"><value>{0}のキャプチャはキャンセルされました</value></data>
+  <data name="CaptureSucceededMessageFormat" xml:space="preserve"><value>{0}を撮影しました ({1}x{2})</value></data>
+
+  <data name="AlreadyRunningMessage" xml:space="preserve"><value>既にSShotは起動しています。</value></data>
+  <data name="UnexpectedErrorMessageFormat" xml:space="preserve"><value>予期しないエラーが発生し、処理を完了できませんでした:
+{0}</value></data>
+</root>

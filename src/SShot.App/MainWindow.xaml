@@ -1,0 +1,142 @@
+<Window x:Class="SShot.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SShot.App"
+        xmlns:views="clr-namespace:SShot.App.Views"
+        xmlns:resources="clr-namespace:SShot.App.Resources"
+        mc:Ignorable="d"
+        Title="SShot" Height="700" Width="860" MinWidth="640" MinHeight="480">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style x:Key="RailCaptureButtonStyle" TargetType="Button" BasedOn="{StaticResource NavIconButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCapturePaneActive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ThemeChromeActiveBackground}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ThemeChromeActiveForeground}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="RailHistoryButtonStyle" TargetType="Button" BasedOn="{StaticResource NavIconButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsHistoryPaneActive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ThemeChromeActiveBackground}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ThemeChromeActiveForeground}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="52" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Icon rail: switches the content pane between Capture and History; Settings opens the dialog. -->
+        <Border Grid.Column="0" Background="{DynamicResource ThemeChromeBackground}">
+            <Grid Margin="0,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center">
+                    <Button Style="{StaticResource RailCaptureButtonStyle}" Command="{Binding ShowCapturePaneCommand}"
+                            Margin="0,0,0,10" ToolTip="{x:Static resources:Strings.NavCaptureSectionLabel}">
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconFullScreen}" />
+                    </Button>
+                    <Button Style="{StaticResource RailHistoryButtonStyle}" Command="{Binding ShowHistoryPaneCommand}"
+                            ToolTip="{x:Static resources:Strings.NavHistorySectionLabel}">
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClock}" />
+                    </Button>
+                </StackPanel>
+
+                <Button Grid.Row="1" HorizontalAlignment="Center" Style="{StaticResource NavIconButtonStyle}"
+                        Command="{Binding OpenSettingsCommand}" ToolTip="{x:Static resources:Strings.OpenSettingsButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconGear}" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="20">
+            <!-- Capture pane -->
+            <Grid Visibility="{Binding IsCapturePaneActive, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{x:Static resources:Strings.NavCaptureSectionLabel}" FontSize="20"
+                           FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,0,0,14" />
+
+                <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                    <Button Style="{StaticResource ListActionButtonStyle}" Click="OnCaptureFullScreenClick">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconFullScreen}" Stroke="{DynamicResource ThemeAccent}" Margin="0,0,10,0" />
+                            <TextBlock Text="{x:Static resources:Strings.CaptureFullScreenButton}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ListActionButtonStyle}" Click="OnCaptureRegionClick">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRegion}" Stroke="{DynamicResource ThemeAccent}" StrokeDashArray="1.6,1.2" Margin="0,0,10,0" />
+                            <TextBlock Text="{x:Static resources:Strings.CaptureRegionButton}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ListActionButtonStyle}" Click="OnCaptureWindowClick">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconWindow}" Stroke="{DynamicResource ThemeAccent}" Margin="0,0,10,0" />
+                            <TextBlock Text="{x:Static resources:Strings.CaptureWindowButton}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource ListActionButtonStyle}" Click="OnCaptureScrollingClick">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconScroll}" Stroke="{DynamicResource ThemeAccent}" Margin="0,0,10,0" />
+                            <TextBlock Text="{x:Static resources:Strings.CaptureScrollingButton}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Foreground="{DynamicResource ThemeTextSecondary}"
+                           TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                <Border Grid.Row="3" Style="{StaticResource SurfaceCardStyle}" Margin="0,0,0,10">
+                    <Image Source="{Binding PreviewImage}" Stretch="Uniform" Margin="8" />
+                </Border>
+
+                <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource SurfaceIconButtonStyle}" Command="{Binding OpenEditorCommand}"
+                            Margin="0,0,8,0" ToolTip="{x:Static resources:Strings.OpenEditorButton}">
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconEdit}" />
+                    </Button>
+                    <Button Style="{StaticResource SurfaceIconButtonStyle}" Command="{Binding CopyToClipboardCommand}"
+                            Margin="0,0,8,0" ToolTip="{x:Static resources:Strings.CopyToClipboardButton}">
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClip}" />
+                    </Button>
+                    <Button Style="{StaticResource SurfaceIconButtonStyle}" Command="{Binding SaveToFileCommand}"
+                            ToolTip="{x:Static resources:Strings.SaveToFileButton}">
+                        <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSave}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- History pane -->
+            <Grid Visibility="{Binding IsHistoryPaneActive, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{x:Static resources:Strings.NavHistorySectionLabel}" FontSize="20"
+                           FontWeight="SemiBold" Foreground="{DynamicResource ThemeTextPrimary}" Margin="0,0,0,14" />
+
+                <views:HistoryGalleryView Grid.Row="1" x:Name="HistoryGallery" />
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

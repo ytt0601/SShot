@@ -1,0 +1,76 @@
+<Window x:Class="SShot.App.Views.FloatingToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SShot.App.Views"
+        xmlns:resources="clr-namespace:SShot.App.Resources"
+        Title="SShot"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight" WindowStartupLocation="Manual">
+    <Grid>
+        <Border x:Name="PillBorder" Background="{DynamicResource ThemeChromeBackground}"
+                CornerRadius="999" Padding="8,6" MouseLeftButtonDown="OnPillMouseLeftButtonDown">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.35" Color="Black" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <StackPanel.Resources>
+                    <Style TargetType="Button" BasedOn="{StaticResource NavIconButtonStyle}">
+                        <Setter Property="Margin" Value="1,0" />
+                    </Style>
+                </StackPanel.Resources>
+
+                <Button Click="OnCaptureFullScreenClick" ToolTip="{x:Static resources:Strings.CaptureFullScreenButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconFullScreen}" />
+                </Button>
+                <Button Click="OnCaptureRegionClick" ToolTip="{x:Static resources:Strings.CaptureRegionButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconRegion}" />
+                </Button>
+                <Button Click="OnCaptureWindowClick" ToolTip="{x:Static resources:Strings.CaptureWindowButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconWindow}" />
+                </Button>
+                <Button Click="OnCaptureScrollingClick" ToolTip="{x:Static resources:Strings.CaptureScrollingButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconScroll}" />
+                </Button>
+
+                <Border Width="1" Margin="5,7" Background="{DynamicResource ThemeChromeForeground}" Opacity="0.35" />
+
+                <Button Command="{Binding OpenEditorCommand}" ToolTip="{x:Static resources:Strings.OpenEditorButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconEdit}" />
+                </Button>
+                <Button Command="{Binding CopyToClipboardCommand}" ToolTip="{x:Static resources:Strings.CopyToClipboardButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClip}" />
+                </Button>
+                <Button Command="{Binding SaveToFileCommand}" ToolTip="{x:Static resources:Strings.SaveToFileButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconSave}" />
+                </Button>
+
+                <Border Width="1" Margin="5,7" Background="{DynamicResource ThemeChromeForeground}" Opacity="0.35" />
+
+                <Button x:Name="HistoryToggleButton" Click="OnHistoryToggleClick" ToolTip="{x:Static resources:Strings.NavHistorySectionLabel}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClock}" />
+                </Button>
+                <Button Command="{Binding OpenSettingsCommand}" ToolTip="{x:Static resources:Strings.OpenSettingsButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconGear}" />
+                </Button>
+                <Button Click="OnHideClick" ToolTip="{x:Static resources:Strings.HideToolbarButton}">
+                    <Path Style="{StaticResource ButtonIconStyle}" Data="{StaticResource IconClose}" />
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Popup x:Name="HistoryPopup" PlacementTarget="{Binding ElementName=PillBorder}"
+               Placement="Bottom" StaysOpen="True">
+            <Border Style="{StaticResource SurfaceCardStyle}" Margin="0,8,0,0" Padding="10" MinWidth="380" MaxWidth="420" MaxHeight="400">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.25" Color="Black" />
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock Text="{x:Static resources:Strings.NavHistorySectionLabel}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource ThemeTextPrimary}" Margin="2,0,0,8" />
+                    <views:HistoryGalleryView x:Name="HistoryGallery" />
+                </StackPanel>
+            </Border>
+        </Popup>
+    </Grid>
+</Window>
