@@ -2,6 +2,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.Input;
 using NHotkey;
 using NHotkey.Wpf;
+using SShot.App.Services;
 using SShot.App.ViewModels;
 using SShot.Core.Capture;
 using SShot.Core.Settings;
@@ -13,7 +14,7 @@ namespace SShot.App.Hotkeys;
 /// implementation/maintenance cost (see CLAUDE.md). Hotkey strings are parsed via
 /// SShot.Core.Settings.HotkeyString so the same "Ctrl+Shift+R" format is used in settings.json.
 /// </summary>
-public sealed class GlobalHotkeyManager
+public sealed class GlobalHotkeyManager(CaptureGate captureGate)
 {
     public bool Register(string name, string hotkeyString, EventHandler<HotkeyEventArgs> handler)
     {
@@ -67,8 +68,13 @@ public sealed class GlobalHotkeyManager
     /// window's own Hide/Show wrapper (see their RunHiddenAsync) is reachable from this hotkey path,
     /// only from their own button clicks.
     /// </summary>
-    private static async Task RunHiddenIfVisibleAsync(Window window, IAsyncRelayCommand command)
+    private async Task RunHiddenIfVisibleAsync(Window window, IAsyncRelayCommand command)
     {
+        if (!captureGate.TryBegin())
+        {
+            return;
+        }
+
         bool wasVisible = window.IsVisible;
         if (wasVisible)
         {
@@ -86,6 +92,8 @@ public sealed class GlobalHotkeyManager
             {
                 window.Show();
             }
+
+            captureGate.End();
         }
     }
 }

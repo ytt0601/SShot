@@ -49,4 +49,30 @@ public class ImageFileServiceTests
             }
         }
     }
+
+    [Fact]
+    public void Save_CalledTwiceWithSameTimestamp_DoesNotOverwritePriorFile()
+    {
+        var service = new ImageFileService();
+        var tempFolder = Path.Combine(Path.GetTempPath(), "SShotTests_" + Guid.NewGuid());
+        var bitmap = new System.Windows.Media.Imaging.WriteableBitmap(4, 4, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null);
+        var timestamp = new DateTime(2026, 1, 1, 12, 0, 0);
+
+        try
+        {
+            string firstPath = service.Save(bitmap, tempFolder, ImageFileFormat.Png, timestamp);
+            string secondPath = service.Save(bitmap, tempFolder, ImageFileFormat.Png, timestamp);
+
+            Assert.NotEqual(firstPath, secondPath);
+            Assert.True(File.Exists(firstPath));
+            Assert.True(File.Exists(secondPath));
+        }
+        finally
+        {
+            if (Directory.Exists(tempFolder))
+            {
+                Directory.Delete(tempFolder, recursive: true);
+            }
+        }
+    }
 }

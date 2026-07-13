@@ -24,7 +24,7 @@ public static class FrameStitcher
     /// with synthetic pixel data of known offsets.
     /// </summary>
     public static int FindOverlap(
-        byte[] previousPixels, byte[] nextPixels, int width, int height, int stride,
+        byte[] previousPixels, byte[] nextPixels, int width, int height, int previousStride, int nextStride,
         int minOverlap = 8, double maxMeanDifference = 12.0)
     {
         int bestOverlap = 0;
@@ -32,7 +32,7 @@ public static class FrameStitcher
 
         for (int overlap = height; overlap >= minOverlap; overlap--)
         {
-            double score = SampledMeanAbsoluteDifference(previousPixels, nextPixels, width, height, stride, overlap);
+            double score = SampledMeanAbsoluteDifference(previousPixels, nextPixels, width, height, previousStride, nextStride, overlap);
             if (score < bestScore)
             {
                 bestScore = score;
@@ -44,7 +44,7 @@ public static class FrameStitcher
     }
 
     private static double SampledMeanAbsoluteDifference(
-        byte[] previousPixels, byte[] nextPixels, int width, int height, int stride, int overlap)
+        byte[] previousPixels, byte[] nextPixels, int width, int height, int previousStride, int nextStride, int overlap)
     {
         long sum = 0;
         long count = 0;
@@ -53,8 +53,8 @@ public static class FrameStitcher
 
         for (int row = 0; row < overlap; row += rowStep)
         {
-            int previousRowOffset = (previousStartRow + row) * stride;
-            int nextRowOffset = row * stride;
+            int previousRowOffset = (previousStartRow + row) * previousStride;
+            int nextRowOffset = row * nextStride;
 
             for (int x = 0; x < width; x += ColumnStep)
             {
@@ -75,10 +75,11 @@ public static class FrameStitcher
     /// of the scrollable content was reached).</summary>
     public static bool HasNewContent(BitmapSource previous, BitmapSource next)
     {
-        var (previousPixels, stride) = ToBgra32Pixels(previous);
-        var (nextPixels, _) = ToBgra32Pixels(next);
+        var (previousPixels, previousStride) = ToBgra32Pixels(previous);
+        var (nextPixels, nextStride) = ToBgra32Pixels(next);
         int height = Math.Min(previous.PixelHeight, next.PixelHeight);
-        int overlap = FindOverlap(previousPixels, nextPixels, previous.PixelWidth, height, stride);
+        int width = Math.Min(previous.PixelWidth, next.PixelWidth);
+        int overlap = FindOverlap(previousPixels, nextPixels, width, height, previousStride, nextStride);
         return overlap < height;
     }
 
@@ -102,13 +103,18 @@ public static class FrameStitcher
 
         var (previousPixels, previousStride) = ToBgra32Pixels(frames[0]);
         int previousHeight = frames[0].PixelHeight;
+        int previousWidth = frames[0].PixelWidth;
 
         for (int i = 1; i < frames.Count; i++)
         {
             var next = frames[i];
             var (nextPixels, nextStride) = ToBgra32Pixels(next);
             int compareHeight = Math.Min(previousHeight, next.PixelHeight);
-            int overlap = FindOverlap(previousPixels, nextPixels, width, compareHeight, nextStride);
+            // previousStride/nextStride can legitimately differ if the captured window's width
+            // changed between frames (bounds are re-queried every tick) - comparing with a single
+            // shared stride would misalign rows or index past a narrower buffer.
+            int compareWidth = Math.Min(previousWidth, next.PixelWidth);
+            int overlap = FindOverlap(previousPixels, nextPixels, compareWidth, compareHeight, previousStride, nextStride);
             int newRowCount = next.PixelHeight - overlap;
 
             if (newRowCount > 0)
@@ -119,6 +125,7 @@ public static class FrameStitcher
             previousPixels = nextPixels;
             previousStride = nextStride;
             previousHeight = next.PixelHeight;
+            previousWidth = next.PixelWidth;
         }
 
         int totalHeight = segments.Sum(s => s.RowCount);

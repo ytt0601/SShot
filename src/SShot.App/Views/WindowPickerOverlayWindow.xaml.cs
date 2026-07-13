@@ -31,6 +31,7 @@ public partial class WindowPickerOverlayWindow : Window
 
     private readonly DispatcherTimer _pollTimer;
     private readonly Int32Rect _virtualBoundsPhysical;
+    private readonly double _dpiScale;
     private IntPtr _ownHwnd = IntPtr.Zero;
     private IntPtr _hoveredHwnd = IntPtr.Zero;
     private bool _hoveredIsChildMode;
@@ -45,8 +46,8 @@ public partial class WindowPickerOverlayWindow : Window
         InitializeComponent();
 
         _virtualBoundsPhysical = VirtualScreenBounds.GetVirtualDesktopBounds();
-        double dpiScale = DpiHelper.GetDpiScaleForMonitor(_virtualBoundsPhysical);
-        var dip = DpiHelper.PhysicalToDip(_virtualBoundsPhysical, dpiScale);
+        _dpiScale = DpiHelper.GetDpiScaleForMonitor(_virtualBoundsPhysical);
+        var dip = DpiHelper.PhysicalToDip(_virtualBoundsPhysical, _dpiScale);
 
         Left = dip.X;
         Top = dip.Y;
@@ -117,11 +118,15 @@ public partial class WindowPickerOverlayWindow : Window
             return;
         }
 
-        double scale = DpiHelper.GetDpiScale(this);
-        double localX = (bounds.Value.X - _virtualBoundsPhysical.X) / scale;
-        double localY = (bounds.Value.Y - _virtualBoundsPhysical.Y) / scale;
-        double localWidth = bounds.Value.Width / scale;
-        double localHeight = bounds.Value.Height / scale;
+        // Reuse the same scale used to size/position this window itself (Left/Top/Width/Height,
+        // set in the constructor via DpiHelper.GetDpiScaleForMonitor), not VisualTreeHelper.GetDpi
+        // (this) - this overlay spans the entire virtual desktop, so its own runtime DPI reflects
+        // only whichever single monitor Windows treats as "owning" the HWND, and re-querying it
+        // here could silently diverge from the scale the window was actually laid out with.
+        double localX = (bounds.Value.X - _virtualBoundsPhysical.X) / _dpiScale;
+        double localY = (bounds.Value.Y - _virtualBoundsPhysical.Y) / _dpiScale;
+        double localWidth = bounds.Value.Width / _dpiScale;
+        double localHeight = bounds.Value.Height / _dpiScale;
 
         Canvas.SetLeft(HighlightBorder, localX);
         Canvas.SetTop(HighlightBorder, localY);

@@ -21,7 +21,33 @@ public sealed class ImageFileService
     {
         Directory.CreateDirectory(folderPath);
         string fileName = BuildFileName(timestamp ?? DateTime.Now, format);
-        return SaveAs(image, Path.Combine(folderPath, fileName));
+        string fullPath = MakeUniquePath(Path.Combine(folderPath, fileName));
+        return SaveAs(image, fullPath);
+    }
+
+    /// <summary>BuildFileName has only second precision, so two captures saved within the same
+    /// second would otherwise collide - unlike SaveAs (an explicit path the user picked, e.g. via
+    /// a save dialog, where overwriting is the expected/intended action), an auto-generated name
+    /// colliding should never silently destroy a prior screenshot.</summary>
+    private static string MakeUniquePath(string fullPath)
+    {
+        if (!File.Exists(fullPath))
+        {
+            return fullPath;
+        }
+
+        string directory = Path.GetDirectoryName(fullPath) ?? string.Empty;
+        string nameWithoutExtension = Path.GetFileNameWithoutExtension(fullPath);
+        string extension = Path.GetExtension(fullPath);
+
+        for (int counter = 2; ; counter++)
+        {
+            string candidate = Path.Combine(directory, $"{nameWithoutExtension}_{counter}{extension}");
+            if (!File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
     }
 
     /// <summary>Saves directly to an explicit path (e.g. one chosen via a save-file dialog).

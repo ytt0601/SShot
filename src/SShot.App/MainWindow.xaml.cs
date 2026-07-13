@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.Input;
+using SShot.App.Services;
 using SShot.App.ViewModels;
 using SShot.Core.Capture;
 
@@ -13,13 +14,15 @@ namespace SShot.App;
 public partial class MainWindow : Window, IPrimaryAppWindow
 {
     private readonly MainViewModel _viewModel;
+    private readonly CaptureGate _captureGate;
     private bool _isExiting;
 
-    public MainWindow(MainViewModel viewModel, HistoryViewModel historyViewModel)
+    public MainWindow(MainViewModel viewModel, HistoryViewModel historyViewModel, CaptureGate captureGate)
     {
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
+        _captureGate = captureGate;
         HistoryGallery.DataContext = historyViewModel;
         HistoryGallery.ItemActivated += (_, item) => viewModel.OpenHistoryItem(item);
     }
@@ -41,6 +44,11 @@ public partial class MainWindow : Window, IPrimaryAppWindow
     /// </summary>
     private async Task RunHiddenAsync(IAsyncRelayCommand command)
     {
+        if (!_captureGate.TryBegin())
+        {
+            return;
+        }
+
         Hide();
         DwmSync.WaitForNextFrame();
         try
@@ -50,6 +58,7 @@ public partial class MainWindow : Window, IPrimaryAppWindow
         finally
         {
             Show();
+            _captureGate.End();
         }
     }
 

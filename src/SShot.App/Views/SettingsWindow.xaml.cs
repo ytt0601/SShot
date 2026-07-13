@@ -21,5 +21,8 @@ public partial class SettingsWindow : Window
         Close();
     }
 
-    private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
+    // Close button also has IsCancel="True" (so Escape works too); WPF's IsCancel handling sets
+    // DialogResult itself after this handler returns, which implicitly closes the window - calling
+    // Close() here directly would make that second, redundant close throw InvalidOperationException.
+    private void OnCloseClick(object sender, RoutedEventArgs e) => DialogResult = false;
 }

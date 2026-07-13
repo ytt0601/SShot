@@ -59,10 +59,10 @@ public class FrameStitcherTests
         var previousFrame = Crop(master, 0, 100);
         var nextFrame = Crop(master, 40, 100); // scrolled down by 40 -> 60 rows overlap
 
-        var (previousPixels, stride) = ToBgra32(previousFrame);
-        var (nextPixels, _) = ToBgra32(nextFrame);
+        var (previousPixels, previousStride) = ToBgra32(previousFrame);
+        var (nextPixels, nextStride) = ToBgra32(nextFrame);
 
-        int overlap = FrameStitcher.FindOverlap(previousPixels, nextPixels, Width, 100, stride);
+        int overlap = FrameStitcher.FindOverlap(previousPixels, nextPixels, Width, 100, previousStride, nextStride);
 
         Assert.Equal(60, overlap);
     }
@@ -132,11 +132,30 @@ public class FrameStitcherTests
         unrelated.WritePixels(new Int32Rect(0, 0, Width, 100), buffer, stride, 0);
 
         var (previousPixels, previousStride) = ToBgra32(previousMaster);
-        var (nextPixels, _) = ToBgra32(unrelated);
+        var (nextPixels, nextStride) = ToBgra32(unrelated);
 
-        int overlap = FrameStitcher.FindOverlap(previousPixels, nextPixels, Width, 100, previousStride);
+        int overlap = FrameStitcher.FindOverlap(previousPixels, nextPixels, Width, 100, previousStride, nextStride);
 
         Assert.Equal(0, overlap);
+    }
+
+    [Fact]
+    public void FindOverlap_DifferingFrameWidths_DoesNotThrowAndStaysWithinBounds()
+    {
+        // Regression test: FindOverlap used to take one shared stride for both buffers, which
+        // misaligns rows (or reads past a narrower buffer's bounds) when the captured window's
+        // width changes between scroll-capture ticks. Passing each buffer's own stride, with the
+        // compare width clamped to the narrower frame (as HasNewContent/Stitch now do), must stay
+        // in-bounds regardless.
+        var wide = new WriteableBitmap(64, 100, 96, 96, PixelFormats.Bgra32, null);
+        var narrow = new WriteableBitmap(48, 100, 96, 96, PixelFormats.Bgra32, null);
+
+        var (previousPixels, previousStride) = ToBgra32(wide);
+        var (nextPixels, nextStride) = ToBgra32(narrow);
+
+        int overlap = FrameStitcher.FindOverlap(previousPixels, nextPixels, 48, 100, previousStride, nextStride);
+
+        Assert.InRange(overlap, 0, 100);
     }
 
     private static (byte[] Pixels, int Stride) ToBgra32(BitmapSource source)

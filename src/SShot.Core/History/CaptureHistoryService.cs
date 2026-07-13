@@ -40,7 +40,7 @@ public sealed class CaptureHistoryService
     public CaptureHistoryItem Add(BitmapSource image)
     {
         var capturedAt = DateTime.Now;
-        string filePath = SaveToDisk(image, capturedAt);
+        string? filePath = SaveToDisk(image, capturedAt);
         var item = new CaptureHistoryItem(Guid.NewGuid(), image, CreateThumbnail(image, 160), capturedAt, filePath);
         Items.Insert(0, item);
 
@@ -48,7 +48,10 @@ public sealed class CaptureHistoryService
         {
             var evicted = Items[^1];
             Items.RemoveAt(Items.Count - 1);
-            DeleteFile(evicted.FilePath);
+            if (evicted.FilePath is not null)
+            {
+                DeleteFile(evicted.FilePath);
+            }
         }
 
         return item;
@@ -106,19 +109,30 @@ public sealed class CaptureHistoryService
         }
     }
 
-    private string SaveToDisk(BitmapSource image, DateTime capturedAt)
+    private string? SaveToDisk(BitmapSource image, DateTime capturedAt)
     {
-        Directory.CreateDirectory(_folderPath);
-        string fileName = $"{capturedAt.ToString(TimestampFormat, CultureInfo.InvariantCulture)}_{Guid.NewGuid():N}.png";
-        string fullPath = Path.Combine(_folderPath, fileName);
+        try
+        {
+            Directory.CreateDirectory(_folderPath);
+            string fileName = $"{capturedAt.ToString(TimestampFormat, CultureInfo.InvariantCulture)}_{Guid.NewGuid():N}.png";
+            string fullPath = Path.Combine(_folderPath, fileName);
 
-        var encoder = new PngBitmapEncoder();
-        encoder.Frames.Add(BitmapFrame.Create(image));
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
 
-        using var stream = new FileStream(fullPath, FileMode.Create, FileAccess.Write);
-        encoder.Save(stream);
+            using var stream = new FileStream(fullPath, FileMode.Create, FileAccess.Write);
+            encoder.Save(stream);
 
-        return fullPath;
+            return fullPath;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Locked (AV scanner) or inaccessible (disk full, permissions) - degrade to an
+            // in-memory-only history entry rather than crashing the capture that triggered this,
+            // matching TryLoad/DeleteFile's handling of the same failure modes in this class.
+            System.Diagnostics.Trace.TraceWarning($"CaptureHistoryService: failed to save capture to disk: {ex.Message}");
+            return null;
+        }
     }
 
     private static void DeleteFile(string filePath)

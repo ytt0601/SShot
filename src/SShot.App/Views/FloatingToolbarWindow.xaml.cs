@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
+using SShot.App.Services;
 using SShot.App.ViewModels;
 using SShot.Core.Capture;
 
@@ -16,13 +17,15 @@ namespace SShot.App.Views;
 public partial class FloatingToolbarWindow : Window, IPrimaryAppWindow
 {
     private readonly MainViewModel _viewModel;
+    private readonly CaptureGate _captureGate;
     private bool _isExiting;
 
-    public FloatingToolbarWindow(MainViewModel viewModel, HistoryViewModel historyViewModel)
+    public FloatingToolbarWindow(MainViewModel viewModel, HistoryViewModel historyViewModel, CaptureGate captureGate)
     {
         InitializeComponent();
         DataContext = viewModel;
         _viewModel = viewModel;
+        _captureGate = captureGate;
         HistoryGallery.DataContext = historyViewModel;
         HistoryGallery.ItemActivated += (_, item) =>
         {
@@ -69,6 +72,11 @@ public partial class FloatingToolbarWindow : Window, IPrimaryAppWindow
     /// </summary>
     private async Task RunHiddenAsync(IAsyncRelayCommand command)
     {
+        if (!_captureGate.TryBegin())
+        {
+            return;
+        }
+
         HistoryPopup.IsOpen = false;
         Hide();
         DwmSync.WaitForNextFrame();
@@ -79,6 +87,7 @@ public partial class FloatingToolbarWindow : Window, IPrimaryAppWindow
         finally
         {
             Show();
+            _captureGate.End();
         }
     }
 

@@ -277,6 +277,7 @@
                             MouseLeftButtonDown="OnCanvasMouseLeftButtonDown"
                             MouseMove="OnCanvasMouseMove"
                             MouseLeftButtonUp="OnCanvasMouseLeftButtonUp"
+                            LostMouseCapture="OnCanvasLostMouseCapture"
                             KeyDown="OnCanvasKeyDown">
                         <Image x:Name="BaseImageView" Stretch="None" />
                     </Canvas>

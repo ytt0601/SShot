@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AutoStartService>();
         services.AddSingleton<GlobalHotkeyManager>();
         services.AddSingleton<ThemeService>();
+        services.AddSingleton<CaptureGate>();
 
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<HistoryViewModel>();

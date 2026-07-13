@@ -503,20 +503,47 @@ public partial class EditorWindow : Window
 
     private void OnMosaicIntensityValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (GetSelectedShape() is MosaicShape mosaic)
+        if (GetSelectedShape() is not MosaicShape mosaic)
+        {
+            return;
+        }
+
+        // PreviewMouseDown/Up (above) brackets a mouse-drag gesture into one TransformShapeCommand;
+        // _intensityDragBefore is only set while such a drag is in progress. A Slider also raises
+        // ValueChanged from keyboard input (arrow/Home/End/PageUp/Down) once focused, which never
+        // goes through PreviewMouseDown/Up - without this branch that path would mutate the shape
+        // directly with no Undo/Redo entry at all.
+        if (_intensityDragBefore is not null)
         {
             mosaic.BlockSize = (int)e.NewValue;
             RedrawShapes();
+            return;
         }
+
+        var before = mosaic.Clone();
+        mosaic.BlockSize = (int)e.NewValue;
+        RedrawShapes();
+        _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(mosaic, before, mosaic.Clone()));
     }
 
     private void OnBlurIntensityValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (GetSelectedShape() is BlurShape blur)
+        if (GetSelectedShape() is not BlurShape blur)
+        {
+            return;
+        }
+
+        if (_intensityDragBefore is not null)
         {
             blur.Radius = e.NewValue;
             RedrawShapes();
+            return;
         }
+
+        var before = blur.Clone();
+        blur.Radius = e.NewValue;
+        RedrawShapes();
+        _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(blur, before, blur.Clone()));
     }
 
     private void OnApplyMosaicWholeClick(object sender, RoutedEventArgs e)
@@ -601,23 +628,12 @@ public partial class EditorWindow : Window
 
     private void OnCanvasMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        // ReleaseMouseCapture() synchronously raises LostMouseCapture below, which is what
+        // actually commits a body drag (see OnCanvasLostMouseCapture) - this also covers capture
+        // being force-released externally (Alt-Tab, a dialog stealing focus, session lock), which
+        // fires LostMouseCapture without ever reaching this handler.
         EditorCanvas.ReleaseMouseCapture();
         var point = e.GetPosition(EditorCanvas);
-
-        if (_isDraggingBody)
-        {
-            _isDraggingBody = false;
-            var shape = _dragShape;
-            var before = _dragBeforeBody;
-            _dragShape = null;
-            _dragBeforeBody = null;
-            if (shape is not null && before is not null)
-            {
-                _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(shape, before, shape.Clone()));
-            }
-
-            return;
-        }
 
         if (_isDrawingNew)
         {
@@ -634,6 +650,24 @@ public partial class EditorWindow : Window
         if (_isCropDragging)
         {
             FinishCropDrag(point);
+        }
+    }
+
+    private void OnCanvasLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (!_isDraggingBody)
+        {
+            return;
+        }
+
+        _isDraggingBody = false;
+        var shape = _dragShape;
+        var before = _dragBeforeBody;
+        _dragShape = null;
+        _dragBeforeBody = null;
+        if (shape is not null && before is not null)
+        {
+            _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(shape, before, shape.Clone()));
         }
     }
 
