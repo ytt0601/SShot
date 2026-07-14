@@ -481,8 +481,23 @@ public partial class EditorWindow : Window
     /// OnHandleDragCompleted pattern: the shape is mutated live per tick for immediate visual
     /// feedback, and the whole gesture becomes one undoable TransformShapeCommand at drag end.
     /// </summary>
-    private void OnIntensitySliderPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    private void OnIntensitySliderPreviewMouseDown(object sender, MouseButtonEventArgs e) => BeginIntensityDragIfApplicable();
+
+    private void OnIntensitySliderPreviewKeyDown(object sender, KeyEventArgs e) => BeginIntensityDragIfApplicable();
+
+    /// <summary>
+    /// Snapshots the selected shape once at the start of a mouse drag OR a keyboard-driven change
+    /// (arrow/Home/End/PageUp/Down key-repeat fires many KeyDown/ValueChanged ticks per physical
+    /// press) - the early return when a snapshot already exists is what coalesces either gesture
+    /// into a single undo entry instead of one entry per tick.
+    /// </summary>
+    private void BeginIntensityDragIfApplicable()
     {
+        if (_intensityDragBefore is not null)
+        {
+            return;
+        }
+
         var shape = GetSelectedShape();
         if (shape is MosaicShape or BlurShape)
         {
@@ -490,7 +505,19 @@ public partial class EditorWindow : Window
         }
     }
 
-    private void OnIntensitySliderPreviewMouseUp(object sender, MouseButtonEventArgs e)
+    private void OnIntensitySliderPreviewMouseUp(object sender, MouseButtonEventArgs e) => CommitIntensityDrag();
+
+    private void OnIntensitySliderKeyUp(object sender, KeyEventArgs e) => CommitIntensityDrag();
+
+    /// <summary>
+    /// Also wired to LostMouseCapture: if the Slider's Thumb loses mouse capture externally
+    /// (Alt-Tab, a dialog stealing focus) mid-drag, PreviewMouseUp never fires - without this,
+    /// _intensityDragBefore would stay set forever, silently dropping that drag's undo entry and
+    /// then also swallowing the next keyboard-driven edit (which checks the same field).
+    /// </summary>
+    private void OnIntensitySliderLostMouseCapture(object sender, MouseEventArgs e) => CommitIntensityDrag();
+
+    private void CommitIntensityDrag()
     {
         var before = _intensityDragBefore;
         _intensityDragBefore = null;
@@ -629,15 +656,32 @@ public partial class EditorWindow : Window
     private void OnCanvasMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         // ReleaseMouseCapture() synchronously raises LostMouseCapture below, which is what
-        // actually commits a body drag (see OnCanvasLostMouseCapture) - this also covers capture
-        // being force-released externally (Alt-Tab, a dialog stealing focus, session lock), which
-        // fires LostMouseCapture without ever reaching this handler.
+        // actually commits a body drag / freehand draw / crop drag (see OnCanvasLostMouseCapture)
+        // - this also covers capture being force-released externally (Alt-Tab, a dialog stealing
+        // focus, session lock), which fires LostMouseCapture without ever reaching this handler.
         EditorCanvas.ReleaseMouseCapture();
         var point = e.GetPosition(EditorCanvas);
 
         if (_isDrawingNew)
         {
             FinishDrawNewShape(point);
+        }
+    }
+
+    private void OnCanvasLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (_isDraggingBody)
+        {
+            _isDraggingBody = false;
+            var shape = _dragShape;
+            var before = _dragBeforeBody;
+            _dragShape = null;
+            _dragBeforeBody = null;
+            if (shape is not null && before is not null)
+            {
+                _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(shape, before, shape.Clone()));
+            }
+
             return;
         }
 
@@ -649,25 +693,7 @@ public partial class EditorWindow : Window
 
         if (_isCropDragging)
         {
-            FinishCropDrag(point);
-        }
-    }
-
-    private void OnCanvasLostMouseCapture(object sender, MouseEventArgs e)
-    {
-        if (!_isDraggingBody)
-        {
-            return;
-        }
-
-        _isDraggingBody = false;
-        var shape = _dragShape;
-        var before = _dragBeforeBody;
-        _dragShape = null;
-        _dragBeforeBody = null;
-        if (shape is not null && before is not null)
-        {
-            _viewModel.UndoRedo.ExecuteAndPush(new TransformShapeCommand(shape, before, shape.Clone()));
+            FinishCropDrag(e.GetPosition(EditorCanvas));
         }
     }
 

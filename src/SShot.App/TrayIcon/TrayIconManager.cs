@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using CommunityToolkit.Mvvm.Input;
 using Hardcodet.Wpf.TaskbarNotification;
 using SShot.App.Resources;
 using SShot.App.ViewModels;
@@ -15,7 +16,20 @@ public sealed class TrayIconManager : IDisposable
 {
     private readonly TaskbarIcon _taskbarIcon;
 
-    public TrayIconManager(MainViewModel mainViewModel, Action showMainWindow, Action exitApplication, Action openSettings)
+    /// <summary>
+    /// <paramref name="runGatedCapture"/> routes tray-triggered captures through the same
+    /// CaptureGate + primary-window hide/show behavior as hotkeys (see
+    /// GlobalHotkeyManager.RunGatedCaptureAsync) - binding MenuItem.Command straight to a
+    /// MainViewModel capture command would invoke it directly, bypassing both the gate (letting a
+    /// tray capture race a hotkey/button capture) and the hide/show wrapper (letting the primary
+    /// window bake itself into the screenshot if visible).
+    /// </summary>
+    public TrayIconManager(
+        MainViewModel mainViewModel,
+        Func<IAsyncRelayCommand, Task> runGatedCapture,
+        Action showMainWindow,
+        Action exitApplication,
+        Action openSettings)
     {
         _taskbarIcon = new TaskbarIcon
         {
@@ -24,10 +38,10 @@ public sealed class TrayIconManager : IDisposable
         };
 
         var menu = new ContextMenu();
-        menu.Items.Add(CreateMenuItem(Strings.CaptureFullScreenButton, mainViewModel.CaptureFullScreenCommand));
-        menu.Items.Add(CreateMenuItem(Strings.CaptureRegionButton, mainViewModel.CaptureRegionCommand));
-        menu.Items.Add(CreateMenuItem(Strings.CaptureWindowButton, mainViewModel.CaptureWindowCommand));
-        menu.Items.Add(CreateMenuItem(Strings.CaptureScrollingButton, mainViewModel.CaptureScrollingCommand));
+        menu.Items.Add(CreateCaptureMenuItem(Strings.CaptureFullScreenButton, mainViewModel.CaptureFullScreenCommand, runGatedCapture));
+        menu.Items.Add(CreateCaptureMenuItem(Strings.CaptureRegionButton, mainViewModel.CaptureRegionCommand, runGatedCapture));
+        menu.Items.Add(CreateCaptureMenuItem(Strings.CaptureWindowButton, mainViewModel.CaptureWindowCommand, runGatedCapture));
+        menu.Items.Add(CreateCaptureMenuItem(Strings.CaptureScrollingButton, mainViewModel.CaptureScrollingCommand, runGatedCapture));
         menu.Items.Add(new Separator());
 
         var showItem = new MenuItem { Header = Strings.ShowWindowMenuItem };
@@ -48,8 +62,12 @@ public sealed class TrayIconManager : IDisposable
         _taskbarIcon.TrayMouseDoubleClick += (_, _) => showMainWindow();
     }
 
-    private static MenuItem CreateMenuItem(string header, System.Windows.Input.ICommand command) =>
-        new() { Header = header, Command = command };
+    private static MenuItem CreateCaptureMenuItem(string header, IAsyncRelayCommand command, Func<IAsyncRelayCommand, Task> runGatedCapture)
+    {
+        var item = new MenuItem { Header = header };
+        item.Click += async (_, _) => await runGatedCapture(command);
+        return item;
+    }
 
     /// <summary>
     /// Reuses the icon already embedded in the exe via &lt;ApplicationIcon&gt; (Resources/Icons/app.ico)

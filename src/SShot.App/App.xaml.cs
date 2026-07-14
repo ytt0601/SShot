@@ -82,6 +82,7 @@ public partial class App : Application
 
         _trayIconManager = new TrayIconManager(
             mainViewModel,
+            runGatedCapture: command => hotkeyManager.RunGatedCaptureAsync((Window)primaryWindow, command),
             showMainWindow: primaryWindow.RestoreAndActivate,
             exitApplication: () =>
             {

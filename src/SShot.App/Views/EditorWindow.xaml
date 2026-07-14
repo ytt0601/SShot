@@ -169,6 +169,9 @@
                                 Value="{Binding MosaicBlockSize}"
                                 PreviewMouseDown="OnIntensitySliderPreviewMouseDown"
                                 PreviewMouseUp="OnIntensitySliderPreviewMouseUp"
+                                LostMouseCapture="OnIntensitySliderLostMouseCapture"
+                                PreviewKeyDown="OnIntensitySliderPreviewKeyDown"
+                                KeyUp="OnIntensitySliderKeyUp"
                                 ValueChanged="OnMosaicIntensityValueChanged" Margin="0,0,4,0" />
                         <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnApplyMosaicWholeClick" Margin="0,0,10,0" ToolTip="{x:Static resources:Strings.ApplyMosaicWholeButton}">
                             <StackPanel Orientation="Horizontal">
@@ -191,6 +194,9 @@
                                 Value="{Binding BlurRadius}"
                                 PreviewMouseDown="OnIntensitySliderPreviewMouseDown"
                                 PreviewMouseUp="OnIntensitySliderPreviewMouseUp"
+                                LostMouseCapture="OnIntensitySliderLostMouseCapture"
+                                PreviewKeyDown="OnIntensitySliderPreviewKeyDown"
+                                KeyUp="OnIntensitySliderKeyUp"
                                 ValueChanged="OnBlurIntensityValueChanged" Margin="0,0,4,0" />
                         <Button Style="{StaticResource SurfaceIconButtonStyle}" Click="OnApplyBlurWholeClick" ToolTip="{x:Static resources:Strings.ApplyBlurWholeButton}">
                             <StackPanel Orientation="Horizontal">

@@ -90,11 +90,15 @@ public static class FrameStitcher
             throw new ArgumentException("At least one frame is required.", nameof(frames));
         }
 
-        int width = frames[0].PixelWidth;
         if (frames.Count == 1)
         {
             return frames[0];
         }
+
+        // The captured window's width can legitimately change between scroll-capture ticks (see
+        // the compareWidth clamp below) - sizing the destination to the narrowest frame guarantees
+        // every frame's rows fit, since CopyRows additionally clamps its own write width to this.
+        int width = frames.Min(f => f.PixelWidth);
 
         var segments = new List<(BitmapSource Frame, int StartRow, int RowCount)>
         {
@@ -148,10 +152,14 @@ public static class FrameStitcher
             ? source
             : new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
 
+        // Clamp to the destination's width, not just the source's: a later frame can be wider than
+        // the narrowest frame the destination bitmap was sized for (see Stitch's width = Min(...)),
+        // and WritePixels throws if the write rect exceeds the destination bounds.
+        int copyWidth = Math.Min(converted.PixelWidth, destination.PixelWidth);
         int stride = converted.PixelWidth * 4;
         var buffer = new byte[stride * rowCount];
         converted.CopyPixels(new Int32Rect(0, startRow, converted.PixelWidth, rowCount), buffer, stride, 0);
-        destination.WritePixels(new Int32Rect(0, destY, converted.PixelWidth, rowCount), buffer, stride, 0);
+        destination.WritePixels(new Int32Rect(0, destY, copyWidth, rowCount), buffer, stride, 0);
     }
 
     private static (byte[] Pixels, int Stride) ToBgra32Pixels(BitmapSource source)

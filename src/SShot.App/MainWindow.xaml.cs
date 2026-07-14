@@ -44,7 +44,8 @@ public partial class MainWindow : Window, IPrimaryAppWindow
     /// </summary>
     private async Task RunHiddenAsync(IAsyncRelayCommand command)
     {
-        if (!_captureGate.TryBegin())
+        using var captureScope = _captureGate.TryBeginScope();
+        if (captureScope is null)
         {
             return;
         }
@@ -58,7 +59,6 @@ public partial class MainWindow : Window, IPrimaryAppWindow
         finally
         {
             Show();
-            _captureGate.End();
         }
     }
 

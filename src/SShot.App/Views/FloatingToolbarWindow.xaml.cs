@@ -72,7 +72,8 @@ public partial class FloatingToolbarWindow : Window, IPrimaryAppWindow
     /// </summary>
     private async Task RunHiddenAsync(IAsyncRelayCommand command)
     {
-        if (!_captureGate.TryBegin())
+        using var captureScope = _captureGate.TryBeginScope();
+        if (captureScope is null)
         {
             return;
         }
@@ -87,7 +88,6 @@ public partial class FloatingToolbarWindow : Window, IPrimaryAppWindow
         finally
         {
             Show();
-            _captureGate.End();
         }
     }
 

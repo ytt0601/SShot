@@ -140,6 +140,27 @@ public class FrameStitcherTests
     }
 
     [Fact]
+    public void Stitch_FrameWidensPartway_DoesNotThrowAndStaysWithinNarrowestWidth()
+    {
+        // Regression test: Stitch used to size the destination bitmap to frames[0].PixelWidth and
+        // let CopyRows write each frame's own (unclamped) width into it. If a later frame is wider
+        // than frames[0] - the captured window resized wider mid scroll-capture - WritePixels'
+        // source rect would exceed the destination bounds and throw. The destination must be sized
+        // to (and every frame's copy clamped to) the narrowest frame instead.
+        var master = CreateStripedMaster(300);
+        var wider = new WriteableBitmap(Width + 16, 100, 96, 96, PixelFormats.Bgra32, null);
+        var frames = new List<BitmapSource>
+        {
+            Crop(master, 0, 100),
+            wider, // wider than frames[0] - simulates the captured window resizing wider mid-capture
+        };
+
+        var stitched = FrameStitcher.Stitch(frames);
+
+        Assert.Equal(Width, stitched.PixelWidth);
+    }
+
+    [Fact]
     public void FindOverlap_DifferingFrameWidths_DoesNotThrowAndStaysWithinBounds()
     {
         // Regression test: FindOverlap used to take one shared stride for both buffers, which

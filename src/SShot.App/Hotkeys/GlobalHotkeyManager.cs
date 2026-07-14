@@ -54,10 +54,10 @@ public sealed class GlobalHotkeyManager(CaptureGate captureGate)
     /// </summary>
     public void RegisterCaptureHotkeys(MainViewModel viewModel, Window primaryWindow, AppSettings settings)
     {
-        Register("SShot.CaptureFullScreen", settings.FullScreenHotkey, async (_, _) => await RunHiddenIfVisibleAsync(primaryWindow, viewModel.CaptureFullScreenCommand));
-        Register("SShot.CaptureRegion", settings.RegionHotkey, async (_, _) => await RunHiddenIfVisibleAsync(primaryWindow, viewModel.CaptureRegionCommand));
-        Register("SShot.CaptureWindow", settings.WindowHotkey, async (_, _) => await RunHiddenIfVisibleAsync(primaryWindow, viewModel.CaptureWindowCommand));
-        Register("SShot.CaptureScrolling", settings.ScrollingHotkey, async (_, _) => await RunHiddenIfVisibleAsync(primaryWindow, viewModel.CaptureScrollingCommand));
+        Register("SShot.CaptureFullScreen", settings.FullScreenHotkey, async (_, _) => await RunGatedCaptureAsync(primaryWindow, viewModel.CaptureFullScreenCommand));
+        Register("SShot.CaptureRegion", settings.RegionHotkey, async (_, _) => await RunGatedCaptureAsync(primaryWindow, viewModel.CaptureRegionCommand));
+        Register("SShot.CaptureWindow", settings.WindowHotkey, async (_, _) => await RunGatedCaptureAsync(primaryWindow, viewModel.CaptureWindowCommand));
+        Register("SShot.CaptureScrolling", settings.ScrollingHotkey, async (_, _) => await RunGatedCaptureAsync(primaryWindow, viewModel.CaptureScrollingCommand));
     }
 
     /// <summary>
@@ -66,11 +66,13 @@ public sealed class GlobalHotkeyManager(CaptureGate captureGate)
     /// around the capture when it was actually visible beforehand - otherwise a tray-hidden window
     /// would flash on screen after every hotkey capture. This is the shared root cause fix: neither
     /// window's own Hide/Show wrapper (see their RunHiddenAsync) is reachable from this hotkey path,
-    /// only from their own button clicks.
+    /// only from their own button clicks. Public so TrayIconManager can route tray-menu captures
+    /// through the same gating/hide-show behavior instead of invoking the capture commands directly.
     /// </summary>
-    private async Task RunHiddenIfVisibleAsync(Window window, IAsyncRelayCommand command)
+    public async Task RunGatedCaptureAsync(Window window, IAsyncRelayCommand command)
     {
-        if (!captureGate.TryBegin())
+        using var captureScope = captureGate.TryBeginScope();
+        if (captureScope is null)
         {
             return;
         }
@@ -92,8 +94,6 @@ public sealed class GlobalHotkeyManager(CaptureGate captureGate)
             {
                 window.Show();
             }
-
-            captureGate.End();
         }
     }
 }
