@@ -72,6 +72,37 @@ public class SettingsServiceTests
     }
 
     [Fact]
+    public void Load_WhenFileIsCorrupt_BacksUpOriginalBeforeDefaultsCanOverwriteIt()
+    {
+        string path = NewTempFilePath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        const string corruptContent = "{ not valid json";
+        File.WriteAllText(path, corruptContent);
+        var service = new SettingsService(path);
+
+        service.Load();
+        service.Save(new AppSettings());
+
+        Assert.Equal(corruptContent, File.ReadAllText(path + ".corrupt"));
+
+        Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
+    }
+
+    [Fact]
+    public void Save_DoesNotLeaveTempFileBehind()
+    {
+        string path = NewTempFilePath();
+        var service = new SettingsService(path);
+
+        service.Save(new AppSettings());
+
+        Assert.True(File.Exists(path));
+        Assert.False(File.Exists(path + ".tmp"));
+
+        Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
+    }
+
+    [Fact]
     public void Load_WhenFileIsLocked_ReturnsDefaultsInsteadOfThrowing()
     {
         string path = NewTempFilePath();

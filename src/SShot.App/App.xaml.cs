@@ -9,6 +9,7 @@ using SShot.App.Services;
 using SShot.App.TrayIcon;
 using SShot.App.ViewModels;
 using SShot.App.Views;
+using SShot.Core.History;
 using SShot.Core.Settings;
 
 namespace SShot.App;
@@ -92,6 +93,10 @@ public partial class App : Application
             openSettings: () => mainViewModel.OpenSettingsCommand.Execute(null));
 
         ((Window)primaryWindow).Show();
+
+        // After Show(), so decoding the previous session's history PNGs never delays first
+        // paint (see CaptureHistoryService.LoadFromDiskAsync).
+        _ = Services.GetRequiredService<CaptureHistoryService>().LoadFromDiskAsync();
     }
 
     protected override void OnExit(ExitEventArgs e)

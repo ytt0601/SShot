@@ -31,7 +31,7 @@ public partial class WindowPickerOverlayWindow : Window
 
     private readonly DispatcherTimer _pollTimer;
     private readonly Int32Rect _virtualBoundsPhysical;
-    private readonly double _dpiScale;
+    private double _dpiScale;
     private IntPtr _ownHwnd = IntPtr.Zero;
     private IntPtr _hoveredHwnd = IntPtr.Zero;
     private bool _hoveredIsChildMode;
@@ -73,7 +73,29 @@ public partial class WindowPickerOverlayWindow : Window
 
         WindowPickerSupport.MakeClickThrough(_ownHwnd);
 
+        // The constructor's DIP placement used the DPI of whichever monitor MonitorFromRect
+        // picked for the virtual bounds; the DPI Windows actually assigned this HWND can differ
+        // on mixed-DPI setups, which would both offset the window and misalign every highlight.
+        // Pin the window to the physical virtual-desktop bounds and adopt its real scale.
+        WindowPickerSupport.SetPhysicalBounds(_ownHwnd, _virtualBoundsPhysical);
+        _dpiScale = DpiHelper.GetDpiScale(this);
+
         _pollTimer.Start();
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        _dpiScale = newDpi.DpiScaleX;
+        if (_ownHwnd != IntPtr.Zero)
+        {
+            WindowPickerSupport.SetPhysicalBounds(_ownHwnd, _virtualBoundsPhysical);
+        }
+
+        if (_hoveredHwnd != IntPtr.Zero)
+        {
+            UpdateHighlight(_hoveredHwnd, _hoveredIsChildMode);
+        }
     }
 
     private void OnKeyDown(object sender, KeyEventArgs e)
@@ -118,15 +140,15 @@ public partial class WindowPickerOverlayWindow : Window
             return;
         }
 
-        // Reuse the same scale used to size/position this window itself (Left/Top/Width/Height,
-        // set in the constructor via DpiHelper.GetDpiScaleForMonitor), not VisualTreeHelper.GetDpi
-        // (this) - this overlay spans the entire virtual desktop, so its own runtime DPI reflects
-        // only whichever single monitor Windows treats as "owning" the HWND, and re-querying it
-        // here could silently diverge from the scale the window was actually laid out with.
-        double localX = (bounds.Value.X - _virtualBoundsPhysical.X) / _dpiScale;
-        double localY = (bounds.Value.Y - _virtualBoundsPhysical.Y) / _dpiScale;
-        double localWidth = bounds.Value.Width / _dpiScale;
-        double localHeight = bounds.Value.Height / _dpiScale;
+        // _dpiScale is the window's actual assigned DPI (set in OnSourceInitialized / OnDpiChanged
+        // after the HWND is pinned to physical bounds), so dividing by it maps physical pixels to
+        // this window's DIP space uniformly across all monitors it spans.
+        var local = DpiHelper.PhysicalToLocalDip(
+            bounds.Value, new Point(_virtualBoundsPhysical.X, _virtualBoundsPhysical.Y), _dpiScale);
+        double localX = local.X;
+        double localY = local.Y;
+        double localWidth = local.Width;
+        double localHeight = local.Height;
 
         Canvas.SetLeft(HighlightBorder, localX);
         Canvas.SetTop(HighlightBorder, localY);

@@ -18,7 +18,7 @@ public sealed class WindowPickerCaptureService(WindowCaptureService windowCaptur
         overlay.WindowConfirmed += (_, hwnd) =>
         {
             overlay.Close();
-            tcs.TrySetResult(windowCapture.CaptureWindow(hwnd));
+            tcs.CompleteWith(() => windowCapture.CaptureWindow(hwnd));
         };
         overlay.Cancelled += (_, _) =>
         {

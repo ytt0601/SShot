@@ -28,6 +28,29 @@ public class ImageFileServiceTests
     }
 
     [Fact]
+    public void BuildFileName_IgnoresCurrentCultureCalendar()
+    {
+        var service = new ImageFileService();
+        var timestamp = new DateTime(2026, 7, 8, 22, 37, 43);
+        var originalCulture = Thread.CurrentThread.CurrentCulture;
+
+        try
+        {
+            // th-TH defaults to the Thai Buddhist calendar (year 2569 for 2026); the filename
+            // must stay Gregorian to match CaptureHistoryService and sort chronologically.
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("th-TH");
+
+            string fileName = service.BuildFileName(timestamp, ImageFileFormat.Png);
+
+            Assert.Equal("SShot_20260708_223743.png", fileName);
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = originalCulture;
+        }
+    }
+
+    [Fact]
     public void Save_WritesFileToFolder_AndReturnsFullPath()
     {
         var service = new ImageFileService();

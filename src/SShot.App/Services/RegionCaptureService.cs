@@ -56,20 +56,25 @@ public sealed class RegionCaptureService(IScreenCaptureService screenCapture) : 
                 return;
             }
 
-            // CroppedBitmap is a lazy view over its Source, not a pixel copy - Freeze() doesn't
-            // materialize it, so keeping this around would keep the entire (potentially huge,
-            // multi-monitor) frozenDesktop bitmap alive for as long as the result is referenced
-            // (e.g. in CaptureHistoryService, for the app's whole session). WriteableBitmap's
-            // BitmapSource constructor eagerly copies pixel data, fully decoupling the result
-            // from frozenDesktop.
-            var cropped = new WriteableBitmap(new CroppedBitmap(frozenDesktop, cropRect));
-            cropped.Freeze();
+            // The eager pixel copy below can throw under memory pressure for huge selections;
+            // CompleteWith (see TaskCompletionSourceExtensions) guarantees the Task still completes.
+            tcs.CompleteWith(() =>
+            {
+                // CroppedBitmap is a lazy view over its Source, not a pixel copy - Freeze() doesn't
+                // materialize it, so keeping this around would keep the entire (potentially huge,
+                // multi-monitor) frozenDesktop bitmap alive for as long as the result is referenced
+                // (e.g. in CaptureHistoryService, for the app's whole session). WriteableBitmap's
+                // BitmapSource constructor eagerly copies pixel data, fully decoupling the result
+                // from frozenDesktop.
+                var cropped = new WriteableBitmap(new CroppedBitmap(frozenDesktop, cropRect));
+                cropped.Freeze();
 
-            var absoluteBounds = new Int32Rect(
-                cropRect.X + virtualBounds.X, cropRect.Y + virtualBounds.Y,
-                cropRect.Width, cropRect.Height);
+                var absoluteBounds = new Int32Rect(
+                    cropRect.X + virtualBounds.X, cropRect.Y + virtualBounds.Y,
+                    cropRect.Width, cropRect.Height);
 
-            tcs.TrySetResult(new CaptureResult(cropped, absoluteBounds));
+                return new CaptureResult(cropped, absoluteBounds);
+            });
         }
 
         void OnCancelled(object? s, EventArgs e)

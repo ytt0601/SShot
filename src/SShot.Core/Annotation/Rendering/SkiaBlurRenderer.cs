@@ -32,7 +32,9 @@ public static class SkiaBlurRenderer
 
         using var paint = new SKPaint
         {
-            ImageFilter = SKImageFilter.CreateBlur((float)radius, (float)radius),
+            // Clamp: at the image border the padded crop runs out of real pixels; without it the
+            // kernel samples transparent (decal), leaving alpha < 255 fringes on edge-touching blurs.
+            ImageFilter = SKImageFilter.CreateBlur((float)radius, (float)radius, SKShaderTileMode.Clamp),
         };
         float offsetX = region.X - paddedX;
         float offsetY = region.Y - paddedY;

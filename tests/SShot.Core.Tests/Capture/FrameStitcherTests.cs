@@ -68,15 +68,57 @@ public class FrameStitcherTests
     }
 
     [Fact]
-    public void HasNewContent_TrueWhenFrameScrolled_FalseWhenIdentical()
+    public void FindOverlap_ReturnsFullHeightForIdenticalFrames_LessForScrolledFrames()
     {
+        // ScrollingCaptureService now derives "has new content" from FindOverlap directly
+        // (overlap < compareHeight) instead of the removed FrameStitcher.HasNewContent helper.
         var master = CreateStripedMaster(300);
         var frameA = Crop(master, 0, 100);
         var frameB = Crop(master, 40, 100);
         var frameBAgain = Crop(master, 40, 100);
 
-        Assert.True(FrameStitcher.HasNewContent(frameA, frameB));
-        Assert.False(FrameStitcher.HasNewContent(frameB, frameBAgain));
+        var (aPixels, aStride) = ToBgra32(frameA);
+        var (bPixels, bStride) = ToBgra32(frameB);
+        var (bAgainPixels, bAgainStride) = ToBgra32(frameBAgain);
+
+        int scrolledOverlap = FrameStitcher.FindOverlap(aPixels, bPixels, Width, 100, aStride, bStride);
+        int identicalOverlap = FrameStitcher.FindOverlap(bPixels, bAgainPixels, Width, 100, bStride, bAgainStride);
+
+        Assert.True(scrolledOverlap < 100);
+        Assert.Equal(100, identicalOverlap);
+    }
+
+    [Fact]
+    public void FindOverlap_DoesNotStopAtNearZeroFalsePositive_ContinuesToExactMatch()
+    {
+        // Regression test for the early-exit optimization in FindOverlap: a large overlap
+        // (little/no scroll) that scores small-but-nonzero due to a single differing pixel must
+        // not stop the search before a smaller overlap that scores an exact 0.0 match is reached
+        // - only an exact 0.0 score is a safe stopping point, since no score (a mean of absolute
+        // differences) can ever go lower than that floor.
+        const int width = 1;
+        const int height = 10;
+        int stride = width * 4;
+
+        byte[] previous = new byte[stride * height];
+        byte[] next = new byte[stride * height];
+
+        for (int row = 0; row < height; row++)
+        {
+            previous[row * stride] = 100; // uniform content in both frames
+            next[row * stride] = 100;
+        }
+
+        // A single-pixel difference in the bottom row only affects the "almost no scroll"
+        // (overlap = height) hypothesis - it used to score just low enough to trigger an
+        // immediate early exit there under the old fixed-threshold break, before the search
+        // ever reached the smaller overlaps below (all of which exclude this row and are an
+        // exact 0.0 match).
+        next[(height - 1) * stride] = 101;
+
+        int overlap = FrameStitcher.FindOverlap(previous, next, width, height, stride, stride, minOverlap: 1);
+
+        Assert.Equal(height - 1, overlap);
     }
 
     [Fact]
@@ -90,7 +132,8 @@ public class FrameStitcherTests
             Crop(master, 80, 100), // 60 rows overlap -> 40 new rows
         };
 
-        var stitched = FrameStitcher.Stitch(frames);
+        // Same overlaps ScrollingCaptureService would have computed live during capture.
+        var stitched = FrameStitcher.Stitch(frames, [60, 60]);
 
         Assert.Equal(Width, stitched.PixelWidth);
         Assert.Equal(180, stitched.PixelHeight); // 100 + 40 + 40
@@ -103,12 +146,21 @@ public class FrameStitcherTests
     }
 
     [Fact]
+    public void Stitch_WithWrongOverlapCount_Throws()
+    {
+        var master = CreateStripedMaster(300);
+        var frames = new List<BitmapSource> { Crop(master, 0, 100), Crop(master, 40, 100) };
+
+        Assert.Throws<ArgumentException>(() => FrameStitcher.Stitch(frames, [60, 60]));
+    }
+
+    [Fact]
     public void Stitch_SingleFrame_ReturnsItUnchanged()
     {
         var master = CreateStripedMaster(100);
         var frame = Crop(master, 0, 100);
 
-        var stitched = FrameStitcher.Stitch([frame]);
+        var stitched = FrameStitcher.Stitch([frame], []);
 
         Assert.Same(frame, stitched);
     }
@@ -155,7 +207,9 @@ public class FrameStitcherTests
             wider, // wider than frames[0] - simulates the captured window resizing wider mid-capture
         };
 
-        var stitched = FrameStitcher.Stitch(frames);
+        // `wider`'s unrelated (blank) content has no reliable overlap with the master, matching
+        // what ScrollingCaptureService's live FindOverlap call would have computed for this pair.
+        var stitched = FrameStitcher.Stitch(frames, [0]);
 
         Assert.Equal(Width, stitched.PixelWidth);
     }
@@ -166,8 +220,8 @@ public class FrameStitcherTests
         // Regression test: FindOverlap used to take one shared stride for both buffers, which
         // misaligns rows (or reads past a narrower buffer's bounds) when the captured window's
         // width changes between scroll-capture ticks. Passing each buffer's own stride, with the
-        // compare width clamped to the narrower frame (as HasNewContent/Stitch now do), must stay
-        // in-bounds regardless.
+        // compare width clamped to the narrower frame (as ScrollingCaptureService/Stitch now do),
+        // must stay in-bounds regardless.
         var wide = new WriteableBitmap(64, 100, 96, 96, PixelFormats.Bgra32, null);
         var narrow = new WriteableBitmap(48, 100, 96, 96, PixelFormats.Bgra32, null);
 

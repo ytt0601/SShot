@@ -60,7 +60,16 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
             return;
         }
 
-        scrollingCapture.Start(bounds.Value);
+        try
+        {
+            scrollingCapture.Start(bounds.Value);
+        }
+        catch (Exception ex)
+        {
+            _isCapturing = false;
+            tcs.TrySetException(ex);
+            return;
+        }
 
         var hud = new ScrollCaptureHudWindow();
         PositionHudNearWindow(hud, bounds.Value);
@@ -69,6 +78,18 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(StepIntervalMs) };
         bool finishing = false;
 
+        // The returned Task must always complete (success or failure): callers hold the
+        // CaptureGate scope and keep the main window hidden until it does. An exception escaping
+        // the Tick handler would additionally leave the timer running, repeating the failure
+        // every interval.
+        void Teardown()
+        {
+            finishing = true;
+            timer.Stop();
+            hud.Close();
+            _isCapturing = false;
+        }
+
         void Finish()
         {
             if (finishing)
@@ -76,30 +97,45 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
                 return;
             }
 
-            finishing = true;
-            timer.Stop();
-            hud.Close();
-            _isCapturing = false;
-            tcs.TrySetResult(scrollingCapture.Finish());
+            Teardown();
+            tcs.CompleteWith(scrollingCapture.Finish);
+        }
+
+        void Fail(Exception ex)
+        {
+            if (finishing)
+            {
+                return;
+            }
+
+            Teardown();
+            tcs.TrySetException(ex);
         }
 
         hud.StopRequested += (_, _) => Finish();
 
         timer.Tick += (_, _) =>
         {
-            var currentBounds = WindowCaptureService.TryGetWindowBounds(targetHwnd);
-            if (currentBounds is null)
+            try
             {
-                Finish();
-                return;
+                var currentBounds = WindowCaptureService.TryGetWindowBounds(targetHwnd);
+                if (currentBounds is null)
+                {
+                    Finish();
+                    return;
+                }
+
+                bool hasNewContent = scrollingCapture.CaptureNextStep(currentBounds.Value);
+                hud.UpdateFrameCount(scrollingCapture.FrameCount);
+
+                if (!hasNewContent || scrollingCapture.ReachedSafetyLimit)
+                {
+                    Finish();
+                }
             }
-
-            bool hasNewContent = scrollingCapture.CaptureNextStep(currentBounds.Value);
-            hud.UpdateFrameCount(scrollingCapture.FrameCount);
-
-            if (!hasNewContent || scrollingCapture.ReachedSafetyLimit)
+            catch (Exception ex)
             {
-                Finish();
+                Fail(ex);
             }
         };
 

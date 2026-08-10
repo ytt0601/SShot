@@ -37,12 +37,31 @@ public sealed class SettingsService
             string json = File.ReadAllText(_filePath);
             return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
         }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        catch (JsonException)
         {
-            // Corrupt JSON, or the file being momentarily locked/inaccessible (AV scan, etc.) -
-            // either way, startup must proceed with defaults rather than crash before any window
-            // is shown.
+            // Corrupt JSON: startup must proceed with defaults rather than crash, but the next
+            // Save would overwrite the file - preserve the original so a hand-edit typo or a
+            // torn write stays recoverable.
+            TryBackupCorruptFile();
             return new AppSettings();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // The file being momentarily locked/inaccessible (AV scan, etc.) - proceed with
+            // defaults rather than crash before any window is shown.
+            return new AppSettings();
+        }
+    }
+
+    private void TryBackupCorruptFile()
+    {
+        try
+        {
+            File.Copy(_filePath, _filePath + ".corrupt", overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Best effort only - losing the backup must not block startup.
         }
     }
 
@@ -55,6 +74,10 @@ public sealed class SettingsService
         }
 
         string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_filePath, json);
+
+        // Write-then-rename so a crash mid-write can't leave a torn settings.json behind.
+        string tempPath = _filePath + ".tmp";
+        File.WriteAllText(tempPath, json);
+        File.Move(tempPath, _filePath, overwrite: true);
     }
 }

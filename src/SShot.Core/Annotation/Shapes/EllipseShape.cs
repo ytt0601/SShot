@@ -1,21 +1,8 @@
-using System.Windows;
-
 namespace SShot.Core.Annotation.Shapes;
 
-public sealed class EllipseShape : AnnotationShapeBase
+public sealed class EllipseShape : RectBoundedShape
 {
-    public Rect Bounds { get; set; }
+    public override AnnotationShapeBase Clone() => CopyRectTo(new EllipseShape { Id = Id });
 
-    public override Rect GetBounds() => Bounds;
-
-    public override void Translate(Vector delta) => Bounds = Rect.Offset(Bounds, delta);
-
-    public override AnnotationShapeBase Clone() => CopyBaseTo(new EllipseShape { Id = Id, Bounds = Bounds });
-
-    public override void RestoreFrom(AnnotationShapeBase snapshot)
-    {
-        var other = (EllipseShape)snapshot;
-        Bounds = other.Bounds;
-        RestoreBaseFrom(other);
-    }
+    public override void RestoreFrom(AnnotationShapeBase snapshot) => RestoreRectFrom((EllipseShape)snapshot);
 }

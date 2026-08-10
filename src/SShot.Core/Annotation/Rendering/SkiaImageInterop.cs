@@ -23,8 +23,11 @@ internal static class SkiaImageInterop
 
     public static BitmapSource ToBitmapSource(SKBitmap bitmap)
     {
+        // Skia surfaces are premultiplied; labeling those pixels Bgra32 (straight alpha) would
+        // darken any pixel with alpha < 255 (e.g. blur output at the image border).
+        var format = bitmap.AlphaType == SKAlphaType.Premul ? PixelFormats.Pbgra32 : PixelFormats.Bgra32;
         var result = BitmapSource.Create(
-            bitmap.Width, bitmap.Height, 96, 96, PixelFormats.Bgra32, null,
+            bitmap.Width, bitmap.Height, 96, 96, format, null,
             bitmap.GetPixels(), bitmap.RowBytes * bitmap.Height, bitmap.RowBytes);
         result.Freeze();
         return result;

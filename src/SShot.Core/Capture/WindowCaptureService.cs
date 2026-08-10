@@ -39,6 +39,18 @@ public sealed class WindowCaptureService(IScreenCaptureService screenCapture) : 
             return null;
         }
 
+        // A minimized window still reports S_OK extended frame bounds, but they sit at the
+        // off-screen minimize position (~-32000) - BitBlt from there always yields garbage. This
+        // is deliberately a blanket rule for every caller of TryGetWindowBounds (plain window
+        // capture, the window-picker's hover highlight, and scrolling capture's target-still-
+        // present check), not just the scrolling-capture case that originally surfaced it: a
+        // minimized window's bounds are unusable for any of them, so returning null here - "no
+        // capturable bounds" - is correct regardless of which caller asked.
+        if (User32.IsIconic(hwnd))
+        {
+            return null;
+        }
+
         bool isTopLevel = User32.GetAncestor(hwnd, User32.GA_ROOT) == hwnd;
 
         User32.RECT rect;

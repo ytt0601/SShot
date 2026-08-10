@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -14,7 +15,10 @@ public sealed class ImageFileService
     public string BuildFileName(DateTime timestamp, ImageFileFormat format)
     {
         string extension = format == ImageFileFormat.Png ? "png" : "jpg";
-        return $"SShot_{timestamp:yyyyMMdd_HHmmss}.{extension}";
+
+        // Invariant culture: a culture-sensitive format would honor the OS calendar (e.g. Thai
+        // Buddhist year 2569) and diverge from CaptureHistoryService's invariant filenames.
+        return $"SShot_{timestamp.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)}.{extension}";
     }
 
     public string Save(BitmapSource image, string folderPath, ImageFileFormat format, DateTime? timestamp = null)

@@ -51,21 +51,13 @@ public partial class RegionSelectionOverlayWindow : Window
 
     private double CurrentDpiScale => DpiHelper.GetDpiScale(this);
 
-    private Point ToPhysicalPoint(Point localDip)
-    {
-        double scale = CurrentDpiScale;
-        return new Point(
-            _monitorBoundsPhysical.X + (localDip.X * scale),
-            _monitorBoundsPhysical.Y + (localDip.Y * scale));
-    }
+    private Point MonitorOriginPhysical => new(_monitorBoundsPhysical.X, _monitorBoundsPhysical.Y);
 
-    private Point ToLocalDip(Point physicalPoint)
-    {
-        double scale = CurrentDpiScale;
-        return new Point(
-            (physicalPoint.X - _monitorBoundsPhysical.X) / scale,
-            (physicalPoint.Y - _monitorBoundsPhysical.Y) / scale);
-    }
+    private Point ToPhysicalPoint(Point localDip) =>
+        DpiHelper.LocalDipToPhysical(localDip, MonitorOriginPhysical, CurrentDpiScale);
+
+    private Point ToLocalDip(Point physicalPoint) =>
+        DpiHelper.PhysicalToLocalDip(physicalPoint, MonitorOriginPhysical, CurrentDpiScale);
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {

@@ -18,7 +18,12 @@ public static class FrameStitcher
 
     /// <summary>
     /// Searches candidate overlaps from the full compared height down to <paramref name="minOverlap"/>,
-    /// picking the one with the lowest mean per-channel difference. Returns 0 if nothing scores
+    /// picking the one with the lowest mean per-channel difference (stopping early only once a
+    /// candidate scores a perfect 0.0 - the mathematical floor for a mean of absolute differences,
+    /// so no later candidate could ever score lower; anything above 0.0, however small, can still
+    /// be beaten by the true overlap and must not short-circuit the search). BitBlt frames are
+    /// pixel-exact, so a real match after a genuine scroll typically does score exactly 0.0,
+    /// making this a real (if narrower) speedup in the common case. Returns 0 if nothing scores
     /// at or below <paramref name="maxMeanDifference"/> (treat as "no reliable overlap found").
     /// Operates on raw BGRA32 buffers (rather than BitmapSource) so it's cheaply unit-testable
     /// with synthetic pixel data of known offsets.
@@ -37,6 +42,11 @@ public static class FrameStitcher
             {
                 bestScore = score;
                 bestOverlap = overlap;
+
+                if (score == 0)
+                {
+                    break;
+                }
             }
         }
 
@@ -70,20 +80,13 @@ public static class FrameStitcher
         return count == 0 ? double.MaxValue : (double)sum / count;
     }
 
-    /// <summary>True if the new frame has at least one row of content not already visible at
-    /// the bottom of the previous frame - false means scrolling had no effect (likely the end
-    /// of the scrollable content was reached).</summary>
-    public static bool HasNewContent(BitmapSource previous, BitmapSource next)
-    {
-        var (previousPixels, previousStride) = ToBgra32Pixels(previous);
-        var (nextPixels, nextStride) = ToBgra32Pixels(next);
-        int height = Math.Min(previous.PixelHeight, next.PixelHeight);
-        int width = Math.Min(previous.PixelWidth, next.PixelWidth);
-        int overlap = FindOverlap(previousPixels, nextPixels, width, height, previousStride, nextStride);
-        return overlap < height;
-    }
-
-    public static BitmapSource Stitch(IReadOnlyList<BitmapSource> frames)
+    /// <summary>
+    /// Stitches with each frame-pair's overlap already known (as computed live by
+    /// <see cref="ScrollingCaptureService"/> during capture), so no frame needs its pixels
+    /// re-extracted or its overlap re-searched here. <paramref name="overlaps"/>[i] is the
+    /// overlap between frames[i] and frames[i+1].
+    /// </summary>
+    public static BitmapSource Stitch(IReadOnlyList<BitmapSource> frames, IReadOnlyList<int> overlaps)
     {
         if (frames.Count == 0)
         {
@@ -95,9 +98,14 @@ public static class FrameStitcher
             return frames[0];
         }
 
-        // The captured window's width can legitimately change between scroll-capture ticks (see
-        // the compareWidth clamp below) - sizing the destination to the narrowest frame guarantees
-        // every frame's rows fit, since CopyRows additionally clamps its own write width to this.
+        if (overlaps.Count != frames.Count - 1)
+        {
+            throw new ArgumentException("One overlap per consecutive frame pair is required.", nameof(overlaps));
+        }
+
+        // The captured window's width can legitimately change between scroll-capture ticks -
+        // sizing the destination to the narrowest frame guarantees every frame's rows fit,
+        // since CopyRows additionally clamps its own write width to this.
         int width = frames.Min(f => f.PixelWidth);
 
         var segments = new List<(BitmapSource Frame, int StartRow, int RowCount)>
@@ -105,31 +113,16 @@ public static class FrameStitcher
             (frames[0], 0, frames[0].PixelHeight),
         };
 
-        var (previousPixels, previousStride) = ToBgra32Pixels(frames[0]);
-        int previousHeight = frames[0].PixelHeight;
-        int previousWidth = frames[0].PixelWidth;
-
         for (int i = 1; i < frames.Count; i++)
         {
             var next = frames[i];
-            var (nextPixels, nextStride) = ToBgra32Pixels(next);
-            int compareHeight = Math.Min(previousHeight, next.PixelHeight);
-            // previousStride/nextStride can legitimately differ if the captured window's width
-            // changed between frames (bounds are re-queried every tick) - comparing with a single
-            // shared stride would misalign rows or index past a narrower buffer.
-            int compareWidth = Math.Min(previousWidth, next.PixelWidth);
-            int overlap = FindOverlap(previousPixels, nextPixels, compareWidth, compareHeight, previousStride, nextStride);
+            int overlap = overlaps[i - 1];
             int newRowCount = next.PixelHeight - overlap;
 
             if (newRowCount > 0)
             {
                 segments.Add((next, overlap, newRowCount));
             }
-
-            previousPixels = nextPixels;
-            previousStride = nextStride;
-            previousHeight = next.PixelHeight;
-            previousWidth = next.PixelWidth;
         }
 
         int totalHeight = segments.Sum(s => s.RowCount);
@@ -162,7 +155,7 @@ public static class FrameStitcher
         destination.WritePixels(new Int32Rect(0, destY, copyWidth, rowCount), buffer, stride, 0);
     }
 
-    private static (byte[] Pixels, int Stride) ToBgra32Pixels(BitmapSource source)
+    internal static (byte[] Pixels, int Stride) ToBgra32Pixels(BitmapSource source)
     {
         var converted = source.Format == PixelFormats.Bgra32
             ? source

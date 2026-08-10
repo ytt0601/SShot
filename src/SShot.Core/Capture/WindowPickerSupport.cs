@@ -1,3 +1,4 @@
+using System.Windows;
 using SShot.Core.Interop;
 
 namespace SShot.Core.Capture;
@@ -35,5 +36,17 @@ public static class WindowPickerSupport
     {
         int exStyle = User32.GetWindowLong(hwnd, User32.GWL_EXSTYLE);
         User32.SetWindowLong(hwnd, User32.GWL_EXSTYLE, exStyle | User32.WS_EX_TRANSPARENT | User32.WS_EX_LAYERED);
+    }
+
+    /// <summary>Pins a window to exact physical-pixel bounds, bypassing WPF's DIP-based
+    /// Left/Top/Width/Height. Needed for overlays spanning the virtual desktop: WPF converts
+    /// DIPs with the single DPI it assigned the window, which on mixed-DPI setups can differ
+    /// from the scale the DIPs were computed with, landing the window off-target.</summary>
+    public static void SetPhysicalBounds(IntPtr hwnd, Int32Rect physicalBounds)
+    {
+        User32.SetWindowPos(
+            hwnd, IntPtr.Zero,
+            physicalBounds.X, physicalBounds.Y, physicalBounds.Width, physicalBounds.Height,
+            User32.SWP_NOZORDER | User32.SWP_NOACTIVATE);
     }
 }

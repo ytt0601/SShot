@@ -24,6 +24,9 @@ internal static class User32
     internal const int WS_EX_TRANSPARENT = 0x00000020;
     internal const int WS_EX_LAYERED = 0x00080000;
 
+    internal const uint SWP_NOZORDER = 0x0004;
+    internal const uint SWP_NOACTIVATE = 0x0010;
+
     internal delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdcMonitor, ref RECT lprcMonitor, IntPtr dwData);
 
     [DllImport("user32.dll")]
@@ -55,6 +58,13 @@ internal static class User32
 
     [DllImport("user32.dll")]
     internal static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    internal static extern bool IsIconic(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    internal static extern bool SetWindowPos(
+        IntPtr hwnd, IntPtr hwndInsertAfter, int x, int y, int cx, int cy, uint flags);
 
     [DllImport("user32.dll")]
     internal static extern bool GetCursorPos(out POINT point);

@@ -34,7 +34,6 @@ public partial class EditorWindow : Window
     private readonly ShapePatchCache _patchCache = new();
     private SelectionAdorner? _adorner;
     private Guid? _selectedShapeId;
-    private int _nextStepNumber = 1;
 
     private bool _isDraggingBody;
     private AnnotationShapeBase? _dragShape;
@@ -366,7 +365,7 @@ public partial class EditorWindow : Window
                 });
                 break;
 
-            case RectangleShape or EllipseShape or HighlighterShape or MosaicShape or BlurShape:
+            case RectBoundedShape:
                 var b = shape.GetBounds();
                 _adorner.SetHandles(
                     new Dictionary<string, Point>
@@ -391,7 +390,10 @@ public partial class EditorWindow : Window
         }
 
         // Reflect the selected shape's own intensity into the slider, so the slider edits the
-        // shape that's actually selected rather than whatever was last drawn.
+        // shape that's actually selected rather than whatever was last drawn. This can trigger
+        // the slider's ValueChanged synchronously, but OnMosaicIntensityValueChanged/
+        // OnBlurIntensityValueChanged no-op when the incoming value already matches the shape's
+        // current value, so it never pushes a spurious before==after TransformShapeCommand.
         switch (shape)
         {
             case MosaicShape mosaic:
@@ -464,13 +466,9 @@ public partial class EditorWindow : Window
             new Point(Math.Min(left, right), Math.Min(top, bottom)),
             new Point(Math.Max(left, right), Math.Max(top, bottom)));
 
-        switch (shape)
+        if (shape is RectBoundedShape rectShape)
         {
-            case RectangleShape r: r.Bounds = newBounds; break;
-            case EllipseShape el: el.Bounds = newBounds; break;
-            case HighlighterShape h: h.Bounds = newBounds; break;
-            case MosaicShape m: m.Bounds = newBounds; break;
-            case BlurShape bl: bl.Bounds = newBounds; break;
+            rectShape.Bounds = newBounds;
         }
     }
 
@@ -530,7 +528,10 @@ public partial class EditorWindow : Window
 
     private void OnMosaicIntensityValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (GetSelectedShape() is not MosaicShape mosaic)
+        // The second check also covers the slider being synced to a newly-selected shape's own
+        // value (see SetSelection): that assignment can raise this event synchronously, but with
+        // e.NewValue already equal to the shape's current BlockSize, so it's a no-op here too.
+        if (GetSelectedShape() is not MosaicShape mosaic || mosaic.BlockSize == (int)e.NewValue)
         {
             return;
         }
@@ -555,7 +556,10 @@ public partial class EditorWindow : Window
 
     private void OnBlurIntensityValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (GetSelectedShape() is not BlurShape blur)
+        // See the matching comment in OnMosaicIntensityValueChanged: this also absorbs the
+        // selection-sync assignment in SetSelection, since it fires with e.NewValue already equal
+        // to the shape's current Radius.
+        if (GetSelectedShape() is not BlurShape blur || blur.Radius == e.NewValue)
         {
             return;
         }
@@ -656,20 +660,21 @@ public partial class EditorWindow : Window
     private void OnCanvasMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         // ReleaseMouseCapture() synchronously raises LostMouseCapture below, which is what
-        // actually commits a body drag / freehand draw / crop drag (see OnCanvasLostMouseCapture)
-        // - this also covers capture being force-released externally (Alt-Tab, a dialog stealing
-        // focus, session lock), which fires LostMouseCapture without ever reaching this handler.
+        // actually commits a body drag / new-shape draw / freehand draw / crop drag (see
+        // OnCanvasLostMouseCapture) - this also covers capture being force-released externally
+        // (Alt-Tab, a dialog stealing focus, session lock), which fires LostMouseCapture without
+        // ever reaching this handler.
         EditorCanvas.ReleaseMouseCapture();
-        var point = e.GetPosition(EditorCanvas);
-
-        if (_isDrawingNew)
-        {
-            FinishDrawNewShape(point);
-        }
     }
 
     private void OnCanvasLostMouseCapture(object sender, MouseEventArgs e)
     {
+        if (_isDrawingNew)
+        {
+            FinishDrawNewShape(e.GetPosition(EditorCanvas));
+            return;
+        }
+
         if (_isDraggingBody)
         {
             _isDraggingBody = false;
@@ -818,7 +823,12 @@ public partial class EditorWindow : Window
 
     private void CommitStepStamp(Point point)
     {
-        var shape = new StepStampShape { Center = point, Number = _nextStepNumber++, FillColor = _viewModel.SelectedColor };
+        // Derived from the document rather than a cached counter so the numbering stays
+        // consistent across undo/redo and deletion (a counter field would leave gaps or
+        // duplicates after Ctrl+Z).
+        int nextNumber = _viewModel.Document.Shapes.OfType<StepStampShape>()
+            .Select(s => s.Number).DefaultIfEmpty(0).Max() + 1;
+        var shape = new StepStampShape { Center = point, Number = nextNumber, FillColor = _viewModel.SelectedColor };
         _viewModel.UndoRedo.ExecuteAndPush(new AddShapeCommand(_viewModel.Document, shape));
         SetSelection(shape.Id);
     }
