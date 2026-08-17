@@ -33,17 +33,28 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
         _isCapturing = true;
         var tcs = new TaskCompletionSource<CaptureResult?>();
         var picker = new WindowPickerOverlayWindow();
+        bool confirmed = false;
 
         picker.WindowConfirmed += (_, hwnd) =>
         {
+            // Set before Close(), which synchronously raises Closed below - without the flag that
+            // handler would win the race and complete the Task with "cancelled".
+            confirmed = true;
             picker.Close();
             StartScrollLoop(hwnd, tcs);
         };
-        picker.Cancelled += (_, _) =>
+        picker.Cancelled += (_, _) => picker.Close();
+
+        // Last resort: the picker takes keyboard focus, so it can also be closed by routes that
+        // raise neither event (Alt+F4). Without this the Task would never complete, and the caller
+        // holding the CaptureGate scope would keep the primary window hidden forever.
+        picker.Closed += (_, _) =>
         {
-            picker.Close();
-            _isCapturing = false;
-            tcs.TrySetResult(null);
+            if (!confirmed)
+            {
+                _isCapturing = false;
+                tcs.TrySetResult(null);
+            }
         };
 
         picker.Show();
@@ -60,87 +71,99 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
             return;
         }
 
+        // The returned Task must always complete (success or failure): callers hold the
+        // CaptureGate scope and keep the main window hidden until it does. Everything from
+        // scrollingCapture.Start() through timer.Start() is inside one try for that reason - the
+        // HUD's own construction can fail too (a XamlParseException from an unresolvable
+        // {x:Static Strings.X} under a mis-published satellite assembly, say), and an escape there
+        // would strand the Task with no window on screen and the capture gate held for the rest
+        // of the session. An exception escaping the Tick handler would additionally leave the
+        // timer running, repeating the failure every interval.
+        ScrollCaptureHudWindow? pendingHud = null;
+        DispatcherTimer? pendingTimer = null;
+
         try
         {
             scrollingCapture.Start(bounds.Value);
-        }
-        catch (Exception ex)
-        {
-            _isCapturing = false;
-            tcs.TrySetException(ex);
-            return;
-        }
 
-        var hud = new ScrollCaptureHudWindow();
-        PositionHudNearWindow(hud, bounds.Value);
-        hud.UpdateFrameCount(scrollingCapture.FrameCount);
+            var hud = new ScrollCaptureHudWindow();
+            pendingHud = hud;
+            PositionHudNearWindow(hud, bounds.Value);
+            hud.UpdateFrameCount(scrollingCapture.FrameCount);
 
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(StepIntervalMs) };
-        bool finishing = false;
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(StepIntervalMs) };
+            pendingTimer = timer;
+            bool finishing = false;
 
-        // The returned Task must always complete (success or failure): callers hold the
-        // CaptureGate scope and keep the main window hidden until it does. An exception escaping
-        // the Tick handler would additionally leave the timer running, repeating the failure
-        // every interval.
-        void Teardown()
-        {
-            finishing = true;
-            timer.Stop();
-            hud.Close();
-            _isCapturing = false;
-        }
-
-        void Finish()
-        {
-            if (finishing)
+            void Teardown()
             {
-                return;
+                finishing = true;
+                timer.Stop();
+                hud.Close();
+                _isCapturing = false;
             }
 
-            Teardown();
-            tcs.CompleteWith(scrollingCapture.Finish);
-        }
-
-        void Fail(Exception ex)
-        {
-            if (finishing)
+            void Finish()
             {
-                return;
-            }
-
-            Teardown();
-            tcs.TrySetException(ex);
-        }
-
-        hud.StopRequested += (_, _) => Finish();
-
-        timer.Tick += (_, _) =>
-        {
-            try
-            {
-                var currentBounds = WindowCaptureService.TryGetWindowBounds(targetHwnd);
-                if (currentBounds is null)
+                if (finishing)
                 {
-                    Finish();
                     return;
                 }
 
-                bool hasNewContent = scrollingCapture.CaptureNextStep(currentBounds.Value);
-                hud.UpdateFrameCount(scrollingCapture.FrameCount);
-
-                if (!hasNewContent || scrollingCapture.ReachedSafetyLimit)
-                {
-                    Finish();
-                }
+                Teardown();
+                tcs.CompleteWith(scrollingCapture.Finish);
             }
-            catch (Exception ex)
+
+            void Fail(Exception ex)
             {
-                Fail(ex);
-            }
-        };
+                if (finishing)
+                {
+                    return;
+                }
 
-        hud.Show();
-        timer.Start();
+                Teardown();
+                tcs.TrySetException(ex);
+            }
+
+            hud.StopRequested += (_, _) => Finish();
+
+            timer.Tick += (_, _) =>
+            {
+                try
+                {
+                    var currentBounds = WindowCaptureService.TryGetWindowBounds(targetHwnd);
+                    if (currentBounds is null)
+                    {
+                        Finish();
+                        return;
+                    }
+
+                    bool hasNewContent = scrollingCapture.CaptureNextStep(currentBounds.Value);
+                    hud.UpdateFrameCount(scrollingCapture.FrameCount);
+
+                    if (!hasNewContent || scrollingCapture.ReachedSafetyLimit)
+                    {
+                        Finish();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Fail(ex);
+                }
+            };
+
+            hud.Show();
+            timer.Start();
+        }
+        catch (Exception ex)
+        {
+            // Reached only before the loop is armed (Finish/Fail own every path after that, and
+            // both TrySet* calls are no-ops once one of them has completed the Task).
+            pendingTimer?.Stop();
+            pendingHud?.Close();
+            _isCapturing = false;
+            tcs.TrySetException(ex);
+        }
     }
 
     private static void PositionHudNearWindow(Window hud, Int32Rect targetBounds)

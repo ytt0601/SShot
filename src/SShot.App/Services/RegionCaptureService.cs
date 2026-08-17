@@ -22,15 +22,34 @@ public sealed class RegionCaptureService(IScreenCaptureService screenCapture) : 
         var session = new RegionSelectionSession();
         var tcs = new TaskCompletionSource<CaptureResult?>();
         var overlays = new List<RegionSelectionOverlayWindow>();
+        bool cleaningUp = false;
 
         void Cleanup()
         {
+            // Set first: the Close() calls below synchronously raise Closed, and OnOverlayClosed
+            // must not mistake this teardown for the user closing an overlay behind our back.
+            cleaningUp = true;
             session.SelectionCompleted -= OnCompleted;
             session.Cancelled -= OnCancelled;
             foreach (var overlay in overlays)
             {
                 overlay.Close();
             }
+        }
+
+        // Last resort: the overlays take keyboard focus, so one can be closed by a route that
+        // raises neither SelectionCompleted nor Cancelled (Alt+F4). Without this the Task would
+        // never complete, and the caller holding the CaptureGate scope would keep the primary
+        // window hidden forever. Closing any one overlay tears down the whole multi-monitor set.
+        void OnOverlayClosed(object? s, EventArgs e)
+        {
+            if (cleaningUp)
+            {
+                return;
+            }
+
+            Cleanup();
+            tcs.TrySetResult(null);
         }
 
         void OnCompleted(object? s, Rect physicalSelection)
@@ -95,6 +114,7 @@ public sealed class RegionCaptureService(IScreenCaptureService screenCapture) : 
             slice.Freeze();
 
             var overlay = new RegionSelectionOverlayWindow(monitor.Bounds, slice, session);
+            overlay.Closed += OnOverlayClosed;
             overlays.Add(overlay);
             overlay.Show();
         }

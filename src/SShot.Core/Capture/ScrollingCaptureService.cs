@@ -31,8 +31,7 @@ public sealed class ScrollingCaptureService(IScreenCaptureService screenCapture)
 
     public void Start(Int32Rect windowBounds)
     {
-        _frames.Clear();
-        _overlaps.Clear();
+        Reset();
         var firstFrame = screenCapture.CaptureRect(windowBounds);
         _frames.Add(firstFrame);
         (_lastFramePixels, _lastFrameStride) = FrameStitcher.ToBgra32Pixels(firstFrame);
@@ -70,9 +69,32 @@ public sealed class ScrollingCaptureService(IScreenCaptureService screenCapture)
         return overlap < compareHeight;
     }
 
+    /// <summary>
+    /// Stitches the captured frames and ends the session. This service is a DI singleton, so the
+    /// session state is released here rather than only on the next <see cref="Start"/>: otherwise
+    /// up to <see cref="MaxFrames"/> full-size frames plus the last frame's BGRA buffer would stay
+    /// alive for the rest of the app's lifetime, even after the user discarded the result.
+    /// Releasing here also re-arms <see cref="CaptureNextStep"/>'s empty-state fallback, so a step
+    /// taken after a finished session starts a fresh one instead of appending to the old frames.
+    /// </summary>
     public CaptureResult Finish()
     {
-        var stitched = FrameStitcher.Stitch(_frames, _overlaps);
-        return new CaptureResult(stitched, new Int32Rect(0, 0, stitched.PixelWidth, stitched.PixelHeight));
+        try
+        {
+            var stitched = FrameStitcher.Stitch(_frames, _overlaps);
+            return new CaptureResult(stitched, new Int32Rect(0, 0, stitched.PixelWidth, stitched.PixelHeight));
+        }
+        finally
+        {
+            Reset();
+        }
+    }
+
+    private void Reset()
+    {
+        _frames.Clear();
+        _overlaps.Clear();
+        _lastFramePixels = [];
+        _lastFrameStride = 0;
     }
 }

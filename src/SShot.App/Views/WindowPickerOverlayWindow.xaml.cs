@@ -98,6 +98,17 @@ public partial class WindowPickerOverlayWindow : Window
         }
     }
 
+    /// <summary>
+    /// The poll timer is otherwise only stopped on the Escape/click paths. A close that takes
+    /// neither (Alt+F4 - this window holds keyboard focus) would leave it ticking against a closed
+    /// window for the rest of the session, kept alive by the dispatcher.
+    /// </summary>
+    protected override void OnClosed(EventArgs e)
+    {
+        _pollTimer.Stop();
+        base.OnClosed(e);
+    }
+
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
