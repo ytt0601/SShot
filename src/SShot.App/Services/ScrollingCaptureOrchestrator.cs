@@ -17,6 +17,12 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
 {
     private const int StepIntervalMs = 400;
 
+    // Matches ScrollCaptureHudWindow.xaml's Width/Height (DIP), plus the gap kept between the HUD
+    // and the captured window.
+    private const int HudDipWidth = 280;
+    private const int HudDipHeight = 130;
+    private const int HudDipGap = 12;
+
     // ScrollingCaptureService is a DI singleton holding mutable session state (_frames), so two
     // overlapping scroll-capture sessions (e.g. the hotkey pressed twice in quick succession)
     // would otherwise let the second Start() clear frames the first session's timer is still
@@ -166,13 +172,54 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
         }
     }
 
+    /// <summary>
+    /// Places the HUD outside the captured window whenever the desktop has room for it. Sitting
+    /// on top of the target, the HUD is baked into every captured frame at the same spot and never
+    /// scrolls, which does more than repeat it down the stitched image: its rows only line up on
+    /// the "nothing scrolled at all" hypothesis, so it drags the true overlap's score up and the
+    /// full-overlap score down, and FrameStitcher's search can pick the latter - reading as
+    /// "reached the end" on the very first step.
+    /// </summary>
     private static void PositionHudNearWindow(Window hud, Int32Rect targetBounds)
     {
-        var hudPhysicalBounds = new Int32Rect(
-            targetBounds.X + targetBounds.Width - 300, targetBounds.Y + 20, 280, 130);
-        double scale = DpiHelper.GetDpiScaleForMonitor(hudPhysicalBounds);
-        var dip = DpiHelper.PhysicalToDip(hudPhysicalBounds, scale);
+        double targetScale = DpiHelper.GetDpiScaleForMonitor(targetBounds);
+        int width = (int)Math.Ceiling(HudDipWidth * targetScale);
+        int height = (int)Math.Ceiling(HudDipHeight * targetScale);
+        int gap = (int)Math.Ceiling(HudDipGap * targetScale);
+
+        var desktop = VirtualScreenBounds.GetVirtualDesktopBounds();
+        Int32Rect[] candidates =
+        [
+            new(targetBounds.X + targetBounds.Width + gap, targetBounds.Y, width, height),
+            new(targetBounds.X - gap - width, targetBounds.Y, width, height),
+            new(targetBounds.X, targetBounds.Y + targetBounds.Height + gap, width, height),
+            new(targetBounds.X, targetBounds.Y - gap - height, width, height),
+        ];
+
+        // A target that covers the whole virtual desktop leaves nowhere outside it, and a HUD
+        // pushed off-screen would take the Stop button with it - so fall back to the old spot
+        // inside the target rather than to something the user cannot reach.
+        var placement = new Int32Rect(
+            targetBounds.X + targetBounds.Width - width - gap, targetBounds.Y + gap, width, height);
+
+        foreach (var candidate in candidates)
+        {
+            if (IsFullyInside(desktop, candidate))
+            {
+                placement = candidate;
+                break;
+            }
+        }
+
+        double scale = DpiHelper.GetDpiScaleForMonitor(placement);
+        var dip = DpiHelper.PhysicalToDip(placement, scale);
         hud.Left = dip.X;
         hud.Top = dip.Y;
     }
+
+    private static bool IsFullyInside(Int32Rect outer, Int32Rect inner) =>
+        inner.X >= outer.X
+        && inner.Y >= outer.Y
+        && inner.X + inner.Width <= outer.X + outer.Width
+        && inner.Y + inner.Height <= outer.Y + outer.Height;
 }

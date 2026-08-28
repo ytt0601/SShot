@@ -28,16 +28,25 @@ public static class FrameStitcher
     /// Operates on raw BGRA32 buffers (rather than BitmapSource) so it's cheaply unit-testable
     /// with synthetic pixel data of known offsets.
     /// </summary>
+    /// <param name="ignoreTopRows">Rows to skip at the start of each compared band, and
+    /// <paramref name="ignoreBottomRows"/> at its end. A window capture includes chrome that never
+    /// scrolls (tab strip, toolbar, status bar); at the true overlap those rows sit against
+    /// scrolled content and score as a mismatch, which can push the correct candidate past
+    /// <paramref name="maxMeanDifference"/> and make the whole search report "no reliable overlap".
+    /// Both default to 0 so the raw geometry stays unchanged for callers that compare whole
+    /// frames.</param>
     public static int FindOverlap(
         byte[] previousPixels, byte[] nextPixels, int width, int height, int previousStride, int nextStride,
-        int minOverlap = 8, double maxMeanDifference = 12.0)
+        int minOverlap = 8, double maxMeanDifference = 12.0, int ignoreTopRows = 0, int ignoreBottomRows = 0)
     {
         int bestOverlap = 0;
         double bestScore = double.MaxValue;
 
         for (int overlap = height; overlap >= minOverlap; overlap--)
         {
-            double score = SampledMeanAbsoluteDifference(previousPixels, nextPixels, width, height, previousStride, nextStride, overlap);
+            double score = SampledMeanAbsoluteDifference(
+                previousPixels, nextPixels, width, height, previousStride, nextStride, overlap,
+                ignoreTopRows, ignoreBottomRows);
             if (score < bestScore)
             {
                 bestScore = score;
@@ -54,14 +63,29 @@ public static class FrameStitcher
     }
 
     private static double SampledMeanAbsoluteDifference(
-        byte[] previousPixels, byte[] nextPixels, int width, int height, int previousStride, int nextStride, int overlap)
+        byte[] previousPixels, byte[] nextPixels, int width, int height, int previousStride, int nextStride,
+        int overlap, int ignoreTopRows, int ignoreBottomRows)
     {
         long sum = 0;
         long count = 0;
         int previousStartRow = height - overlap;
-        int rowStep = Math.Max(1, overlap / SampleRows);
 
-        for (int row = 0; row < overlap; row += rowStep)
+        // Row r of the band reads next[r] and previous[height - overlap + r], so skipping the
+        // band's first ignoreTopRows drops the rows where either frame is still showing its top
+        // chrome, and skipping its last ignoreBottomRows drops the rows where the previous frame
+        // is showing its bottom chrome (the tighter of the two bounds on that side).
+        int firstRow = ignoreTopRows;
+        int lastRowExclusive = overlap - ignoreBottomRows;
+        if (lastRowExclusive <= firstRow)
+        {
+            // The excluded margins swallow the whole band - too little is left to judge this
+            // candidate, so it must not be allowed to win by scoring an empty (perfect) match.
+            return double.MaxValue;
+        }
+
+        int rowStep = Math.Max(1, (lastRowExclusive - firstRow) / SampleRows);
+
+        for (int row = firstRow; row < lastRowExclusive; row += rowStep)
         {
             int previousRowOffset = (previousStartRow + row) * previousStride;
             int nextRowOffset = row * nextStride;
@@ -86,7 +110,13 @@ public static class FrameStitcher
     /// re-extracted or its overlap re-searched here. <paramref name="overlaps"/>[i] is the
     /// overlap between frames[i] and frames[i+1].
     /// </summary>
-    public static BitmapSource Stitch(IReadOnlyList<BitmapSource> frames, IReadOnlyList<int> overlaps)
+    /// <param name="chromeTopRows">Rows of non-scrolling window chrome at the top of every frame,
+    /// and <paramref name="chromeBottomRows"/> at the bottom. Both default to 0, which stitches
+    /// the frames verbatim. A single frame is still returned unchanged - a one-frame scroll
+    /// capture is just a window shot, chrome included.</param>
+    public static BitmapSource Stitch(
+        IReadOnlyList<BitmapSource> frames, IReadOnlyList<int> overlaps,
+        int chromeTopRows = 0, int chromeBottomRows = 0)
     {
         if (frames.Count == 0)
         {
@@ -108,20 +138,33 @@ public static class FrameStitcher
         // since CopyRows additionally clamps its own write width to this.
         int width = frames.Min(f => f.PixelWidth);
 
-        var segments = new List<(BitmapSource Frame, int StartRow, int RowCount)>
+        // Every frame carries the window's chrome on the same rows, so appending each frame's
+        // trailing rows verbatim splices the bottom chrome into the middle of the result - and
+        // displaces exactly as many rows of real content, which are then missing from the output
+        // even though the capture did see them. Cut the chrome away instead: the first frame keeps
+        // its top chrome so the result still opens like the window it came from, and no frame
+        // contributes its bottom chrome.
+        var segments = new List<(BitmapSource Frame, int StartRow, int RowCount)>();
+        int firstRowCount = frames[0].PixelHeight - chromeBottomRows;
+        if (firstRowCount > 0)
         {
-            (frames[0], 0, frames[0].PixelHeight),
-        };
+            segments.Add((frames[0], 0, firstRowCount));
+        }
 
         for (int i = 1; i < frames.Count; i++)
         {
             var next = frames[i];
-            int overlap = overlaps[i - 1];
-            int newRowCount = next.PixelHeight - overlap;
+            int contentEndRow = next.PixelHeight - chromeBottomRows;
 
-            if (newRowCount > 0)
+            // The scroll advanced by (height - overlap) rows, so that many rows at the end of this
+            // frame's content band are new. Clamping at chromeTopRows covers a scroll longer than
+            // the content band, where the whole band is new (and rows in between were never seen).
+            int startRow = Math.Max(chromeTopRows, contentEndRow - (next.PixelHeight - overlaps[i - 1]));
+            int rowCount = contentEndRow - startRow;
+
+            if (rowCount > 0)
             {
-                segments.Add((next, overlap, newRowCount));
+                segments.Add((next, startRow, rowCount));
             }
         }
 

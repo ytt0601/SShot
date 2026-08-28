@@ -52,6 +52,75 @@ public class FrameStitcherTests
         return Color.FromRgb(buffer[2], buffer[1], buffer[0]);
     }
 
+    /// <summary>Builds a frame whose top and bottom rows are identical, non-scrolling "chrome"
+    /// (a window's tab strip / toolbar / status bar) while the rows between them scroll.</summary>
+    private static byte[] CreateFrameWithChrome(int contentStartRow, int height, int chromeTop, int chromeBottom)
+    {
+        int stride = Width * 4;
+        var buffer = new byte[stride * height];
+
+        for (int row = 0; row < height; row++)
+        {
+            bool isChrome = row < chromeTop || row >= height - chromeBottom;
+            byte r = isChrome ? (byte)255 : (byte)((contentStartRow + row) % 256);
+            byte g = isChrome ? (byte)255 : (byte)0;
+            byte b = isChrome ? (byte)255 : (byte)128;
+
+            for (int x = 0; x < Width; x++)
+            {
+                int offset = (row * stride) + (x * 4);
+                buffer[offset] = b;
+                buffer[offset + 1] = g;
+                buffer[offset + 2] = r;
+                buffer[offset + 3] = 255;
+            }
+        }
+
+        return buffer;
+    }
+
+    [Fact]
+    public void FindOverlap_WithNonScrollingChrome_OnlyFindsTheTrueOverlapWhenMarginsAreExcluded()
+    {
+        // Reproduces what a real window capture looks like: the frame spans the whole window, so
+        // its top and bottom carry chrome that stays put while the middle scrolls. Comparing whole
+        // frames, the chrome only lines up on the "nothing scrolled" hypothesis, which is exactly
+        // the wrong answer - the caller reads a full-height overlap as "reached the end".
+        const int height = 100;
+        const int scroll = 40;
+        const int chromeTop = 12;
+        const int chromeBottom = 8;
+        int stride = Width * 4;
+
+        byte[] previous = CreateFrameWithChrome(0, height, chromeTop, chromeBottom);
+        byte[] next = CreateFrameWithChrome(scroll, height, chromeTop, chromeBottom);
+
+        int wholeFrame = FrameStitcher.FindOverlap(previous, next, Width, height, stride, stride);
+        int marginsExcluded = FrameStitcher.FindOverlap(
+            previous, next, Width, height, stride, stride,
+            ignoreTopRows: chromeTop, ignoreBottomRows: chromeBottom);
+
+        Assert.NotEqual(height - scroll, wholeFrame);
+        Assert.Equal(height - scroll, marginsExcluded);
+    }
+
+    [Fact]
+    public void FindOverlap_MarginsWiderThanTheBand_DoesNotScoreAnEmptyMatch()
+    {
+        // An empty compared band must not be treated as a perfect match, or every candidate
+        // narrower than the margins would beat the real one.
+        const int height = 40;
+        int stride = Width * 4;
+        byte[] previous = CreateFrameWithChrome(0, height, 0, 0);
+        byte[] next = CreateFrameWithChrome(10, height, 0, 0);
+
+        int overlap = FrameStitcher.FindOverlap(
+            previous, next, Width, height, stride, stride,
+            minOverlap: 1, ignoreTopRows: 25, ignoreBottomRows: 25);
+
+        Assert.Equal(0, overlap);
+    }
+
     [Fact]
     public void FindOverlap_DetectsKnownVerticalOffset()
     {
@@ -143,6 +212,72 @@ public class FrameStitcherTests
         Assert.Equal(GetPixelColor(master, 0, 99), GetPixelColor(stitched, 0, 99));
         Assert.Equal(GetPixelColor(master, 0, 150), GetPixelColor(stitched, 0, 150));
         Assert.Equal(GetPixelColor(master, 0, 179), GetPixelColor(stitched, 0, 179));
+    }
+
+    /// <summary>Crops the master like a scrolled window would show it, then paints the top and
+    /// bottom rows over with chrome that stays put no matter how far the content scrolled.</summary>
+    private static BitmapSource CreateWindowFrame(BitmapSource master, int startRow, int height, int chromeTop, int chromeBottom)
+    {
+        int stride = Width * 4;
+        var buffer = new byte[stride * height];
+        master.CopyPixels(new Int32Rect(0, startRow, Width, height), buffer, stride, 0);
+
+        for (int row = 0; row < height; row++)
+        {
+            if (row >= chromeTop && row < height - chromeBottom)
+            {
+                continue;
+            }
+
+            for (int x = 0; x < Width; x++)
+            {
+                int offset = (row * stride) + (x * 4);
+                buffer[offset] = 255;
+                buffer[offset + 1] = 255;
+                buffer[offset + 2] = 255;
+                buffer[offset + 3] = 255;
+            }
+        }
+
+        var bitmap = new WriteableBitmap(Width, height, 96, 96, PixelFormats.Bgra32, null);
+        bitmap.WritePixels(new Int32Rect(0, 0, Width, height), buffer, stride, 0);
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    [Fact]
+    public void Stitch_WithChromeRows_DropsThemInsteadOfSplicingThemIntoTheContent()
+    {
+        // Each frame's trailing rows are its bottom chrome, so appending them verbatim puts a strip
+        // of chrome at every seam and pushes out exactly as many rows of content - content the
+        // capture did see, which then never appears in the result.
+        const int frameHeight = 100;
+        const int shift = 30;
+        const int chromeTop = 10;
+        const int chromeBottom = 8;
+        int overlap = frameHeight - shift;
+
+        var master = CreateStripedMaster(300);
+        List<BitmapSource> frames =
+        [
+            CreateWindowFrame(master, 0, frameHeight, chromeTop, chromeBottom),
+            CreateWindowFrame(master, shift, frameHeight, chromeTop, chromeBottom),
+            CreateWindowFrame(master, shift * 2, frameHeight, chromeTop, chromeBottom),
+        ];
+
+        var stitched = FrameStitcher.Stitch(frames, [overlap, overlap], chromeTop, chromeBottom);
+
+        // First frame's content band (rows 0..91, its top chrome kept) plus one shift per frame.
+        Assert.Equal(frameHeight - chromeBottom + (shift * 2), stitched.PixelHeight);
+
+        // The rows either side of the first seam must run straight on from the master, with no
+        // chrome spliced in and no master row skipped.
+        Assert.Equal(GetPixelColor(master, 0, 10), GetPixelColor(stitched, 0, 10));
+        Assert.Equal(GetPixelColor(master, 0, 91), GetPixelColor(stitched, 0, 91));
+        Assert.Equal(GetPixelColor(master, 0, 92), GetPixelColor(stitched, 0, 92));
+        Assert.Equal(GetPixelColor(master, 0, 121), GetPixelColor(stitched, 0, 121));
+        Assert.Equal(GetPixelColor(master, 0, 122), GetPixelColor(stitched, 0, 122));
+        Assert.Equal(GetPixelColor(master, 0, 151), GetPixelColor(stitched, 0, 151));
     }
 
     [Fact]
