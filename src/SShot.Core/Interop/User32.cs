@@ -20,6 +20,7 @@ internal static class User32
     internal const uint GA_ROOT = 2;
     internal const int VK_LBUTTON = 0x01;
     internal const int VK_CONTROL = 0x11;
+    internal const int VK_ESCAPE = 0x1B;
     internal const int GWL_EXSTYLE = -20;
     internal const int WS_EX_TRANSPARENT = 0x00000020;
     internal const int WS_EX_LAYERED = 0x00080000;

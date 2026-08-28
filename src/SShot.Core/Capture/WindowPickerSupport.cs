@@ -30,6 +30,11 @@ public static class WindowPickerSupport
 
     public static bool IsCtrlKeyDown() => (User32.GetAsyncKeyState(User32.VK_CONTROL) & 0x8000) != 0;
 
+    /// <summary>Polled rather than read from a key event because the picker overlay is
+    /// click-through: a click falls through to the app underneath, which takes the foreground,
+    /// so the overlay can lose keyboard focus and never see an Escape key event again.</summary>
+    public static bool IsEscapeKeyDown() => (User32.GetAsyncKeyState(User32.VK_ESCAPE) & 0x8000) != 0;
+
     /// <summary>Makes a window click-through (WS_EX_TRANSPARENT | WS_EX_LAYERED) so it can draw
     /// a hover highlight on top of the desktop without intercepting mouse hit-testing.</summary>
     public static void MakeClickThrough(IntPtr hwnd)

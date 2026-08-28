@@ -36,6 +36,7 @@ public partial class WindowPickerOverlayWindow : Window
     private IntPtr _hoveredHwnd = IntPtr.Zero;
     private bool _hoveredIsChildMode;
     private bool _wasLeftButtonDown;
+    private bool _cancelled;
 
     public event EventHandler<IntPtr>? WindowConfirmed;
 
@@ -113,13 +114,39 @@ public partial class WindowPickerOverlayWindow : Window
     {
         if (e.Key == Key.Escape)
         {
-            _pollTimer.Stop();
-            Cancelled?.Invoke(this, EventArgs.Empty);
+            Cancel();
         }
+    }
+
+    /// <summary>
+    /// Both the key event and the poll can reach this, and the poll additionally keeps ticking
+    /// until it is stopped here, so the cancel is made idempotent rather than relying on whichever
+    /// path happens to run first.
+    /// </summary>
+    private void Cancel()
+    {
+        if (_cancelled)
+        {
+            return;
+        }
+
+        _cancelled = true;
+        _pollTimer.Stop();
+        Cancelled?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnPollTick(object? sender, EventArgs e)
     {
+        // Escape is polled, not taken from OnKeyDown alone: this window is click-through, so a
+        // click that the poll below misses still falls through and hands the foreground - and with
+        // it the keyboard focus - to the app underneath, after which no key event ever arrives
+        // here and the overlay could only be dismissed by clicking.
+        if (WindowPickerSupport.IsEscapeKeyDown())
+        {
+            Cancel();
+            return;
+        }
+
         bool childMode = WindowPickerSupport.IsCtrlKeyDown();
         IntPtr candidate = childMode ? WindowPickerSupport.GetWindowAtCursor() : WindowPickerSupport.GetRootWindowAtCursor();
 
