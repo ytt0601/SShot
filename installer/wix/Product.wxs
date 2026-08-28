@@ -3,12 +3,17 @@
 
   <Package Name="SShot"
            Manufacturer="SShot"
-           Version="0.1.0.0"
+           Version="!(bind.FileVersion.SShotAppExe)"
            UpgradeCode="5F3DDE94-D3D7-48E6-B51F-9DA409897D54"
            Language="1041"
            Codepage="UTF-8"
            InstallerVersion="500">
 
+    <!--
+      Version binds to the published exe's FileVersion instead of being written here, so the
+      MSI can never disagree with the binary it ships. The number itself lives in
+      Directory.Build.props (<Version>), the same property the exe is built from.
+    -->
     <SummaryInformation Description="SShot Setup" Keywords="Installer" />
 
     <MajorUpgrade DowngradeErrorMessage="A newer version of SShot is already installed." />
