@@ -105,8 +105,15 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
             {
                 finishing = true;
                 timer.Stop();
-                hud.Close();
                 _isCapturing = false;
+
+                // Skipped when the HUD is already closing under its own steam (title-bar close
+                // button or Alt+F4, both of which arrive here through its OnClosing): calling
+                // Close() again from inside that close throws as the outer close unwinds.
+                if (!hud.IsClosing)
+                {
+                    hud.Close();
+                }
             }
 
             void Finish()
@@ -116,8 +123,17 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
                     return;
                 }
 
-                Teardown();
-                tcs.CompleteWith(scrollingCapture.Finish);
+                // try/finally rather than a plain sequence: the caller holds the CaptureGate
+                // scope and keeps the primary window hidden until this Task completes, so a throw
+                // anywhere inside Teardown must not be able to strand it.
+                try
+                {
+                    Teardown();
+                }
+                finally
+                {
+                    tcs.CompleteWith(scrollingCapture.Finish);
+                }
             }
 
             void Fail(Exception ex)
@@ -127,8 +143,14 @@ public sealed class ScrollingCaptureOrchestrator(ScrollingCaptureService scrolli
                     return;
                 }
 
-                Teardown();
-                tcs.TrySetException(ex);
+                try
+                {
+                    Teardown();
+                }
+                finally
+                {
+                    tcs.TrySetException(ex);
+                }
             }
 
             hud.StopRequested += (_, _) => Finish();

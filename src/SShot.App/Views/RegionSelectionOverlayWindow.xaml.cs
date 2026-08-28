@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using SShot.Core.Capture;
 using SShot.Core.Capture.Dpi;
 
@@ -16,8 +17,13 @@ namespace SShot.App.Views;
 /// </summary>
 public partial class RegionSelectionOverlayWindow : Window
 {
+    // Same interval WindowPickerOverlayWindow polls at: short enough that a normal key press
+    // (tens of milliseconds at the very least) is still down when a tick samples it.
+    private const int EscapePollIntervalMs = 40;
+
     private readonly Int32Rect _monitorBoundsPhysical;
     private readonly RegionSelectionSession _session;
+    private readonly DispatcherTimer _escapePollTimer;
 
     public RegionSelectionOverlayWindow(Int32Rect monitorBoundsPhysical, BitmapSource monitorSlice, RegionSelectionSession session)
     {
@@ -40,6 +46,9 @@ public partial class RegionSelectionOverlayWindow : Window
 
         _session.SelectionChanged += OnSelectionChanged;
         Loaded += OnLoaded;
+
+        _escapePollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(EscapePollIntervalMs) };
+        _escapePollTimer.Tick += OnEscapePollTick;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -47,6 +56,34 @@ public partial class RegionSelectionOverlayWindow : Window
         UpdateDimPath(null);
         Activate();
         Focus();
+        _escapePollTimer.Start();
+    }
+
+    /// <summary>
+    /// Escape is polled as well as handled in OnKeyDown (mirroring WindowPickerOverlayWindow),
+    /// because these windows come one per monitor and each calls Activate()/Focus() as it loads:
+    /// on a multi-monitor desktop the instance that ends up in the foreground is not necessarily
+    /// the one holding WPF's keyboard focus, and OnKeyDown then fires for neither. Confirmed on a
+    /// two-monitor setup, where Escape did nothing while mouse selection and Alt+F4 (dispatched by
+    /// the window manager rather than by WPF input routing) both worked.
+    /// </summary>
+    private void OnEscapePollTick(object? sender, EventArgs e)
+    {
+        if (!WindowPickerSupport.IsEscapeKeyDown())
+        {
+            return;
+        }
+
+        // Cancel() tears down every overlay in the set, which stops the sibling timers via
+        // OnClosed below; stopping this one first keeps it from cancelling twice in the meantime.
+        _escapePollTimer.Stop();
+        _session.Cancel();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _escapePollTimer.Stop();
+        base.OnClosed(e);
     }
 
     private double CurrentDpiScale => DpiHelper.GetDpiScale(this);

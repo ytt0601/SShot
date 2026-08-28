@@ -30,9 +30,11 @@ public static class WindowPickerSupport
 
     public static bool IsCtrlKeyDown() => (User32.GetAsyncKeyState(User32.VK_CONTROL) & 0x8000) != 0;
 
-    /// <summary>Polled rather than read from a key event because the picker overlay is
-    /// click-through: a click falls through to the app underneath, which takes the foreground,
-    /// so the overlay can lose keyboard focus and never see an Escape key event again.</summary>
+    /// <summary>Polled rather than read from a key event because neither overlay that uses this
+    /// can count on holding WPF's keyboard focus: the picker overlay is click-through, so a click
+    /// falls through to the app underneath and hands it the foreground, and the region-selection
+    /// overlays come one per monitor, where the foreground instance is not necessarily the one
+    /// holding the focus.</summary>
     public static bool IsEscapeKeyDown() => (User32.GetAsyncKeyState(User32.VK_ESCAPE) & 0x8000) != 0;
 
     /// <summary>Makes a window click-through (WS_EX_TRANSPARENT | WS_EX_LAYERED) so it can draw
