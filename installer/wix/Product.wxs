@@ -92,6 +92,17 @@
                   WorkingDirectory="INSTALLFOLDER" />
         <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\SShot" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+
+        <!--
+          The auto-start entry is written at runtime by AutoStartService (HKCU Run key), not by
+          this installer, so uninstall would otherwise leave a value pointing at the deleted exe -
+          Windows then fails to launch it on every sign-in. Removing it here is per-user by
+          nature: it only cleans up for the account that runs the uninstall.
+        -->
+        <RemoveRegistryValue Id="RemoveAutoStartValue"
+                             Root="HKCU"
+                             Key="Software\Microsoft\Windows\CurrentVersion\Run"
+                             Name="SShot" />
       </Component>
     </DirectoryRef>
 
