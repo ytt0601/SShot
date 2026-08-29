@@ -25,8 +25,25 @@ if (Test-Path $outputDir) {
     Remove-Item -Recurse -Force $outputDir
 }
 
+# MSBuild's up-to-date check is timestamp-based, so it happily reuses assemblies compiled without
+# DebugType=none - and a stale dll drags its debug directory (with the absolute pdb path) back
+# into the bundle. Force a full recompile. obj\ itself is kept so the restore assets survive;
+# only the per-configuration subdirectories go.
+foreach ($projectDir in @((Join-Path $repoRoot "src\SShot.App"), (Join-Path $repoRoot "src\SShot.Core"))) {
+    foreach ($subPath in @("bin\$Configuration", "obj\$Configuration")) {
+        $stalePath = Join-Path $projectDir $subPath
+        if (Test-Path $stalePath) {
+            Remove-Item -Recurse -Force $stalePath
+        }
+    }
+}
+
 Write-Host "Publishing SShot.App ($Configuration, $Runtime) to $outputDir ..." -ForegroundColor Cyan
 
+# DebugType=none: without it the PE debug directory embeds the absolute path of the intermediate
+# output (...\obj\Release\...), exposing the build environment to everyone who downloads the exe.
+# Symbols are only dropped for the distributed build - ordinary dotnet build/run keeps full
+# debugging.
 dotnet publish $projectPath `
     -c $Configuration `
     -r $Runtime `
@@ -34,6 +51,8 @@ dotnet publish $projectPath `
     -p:PublishSingleFile=true `
     -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:PublishReadyToRun=true `
+    -p:DebugType=none `
+    -p:DebugSymbols=false `
     -o $outputDir
 
 if ($LASTEXITCODE -ne 0) {
@@ -44,6 +63,18 @@ $exePath = Join-Path $outputDir "SShot.App.exe"
 if (-not (Test-Path $exePath)) {
     throw "Expected output not found: $exePath"
 }
+
+# SkiaSharp's native package ships an ~85 MB libSkiaSharp.pdb that publish copies into the output
+# even though DebugType=none suppresses our own symbols. It has no place in a distribution.
+Get-ChildItem -Path $outputDir -Filter *.pdb -Recurse | Remove-Item -Force
+
+# The exe must not carry any path from the build environment. Verified rather than trusted,
+# because an embedded path is invisible in normal use.
+$exeText = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($exePath))
+if ($exeText.Contains($env:USERPROFILE)) {
+    throw "Published exe still embeds a build environment path. DebugType=none did not take effect."
+}
+$exeText = $null
 
 # The exe bundles the .NET runtime, SkiaSharp and the rest of the dependency graph, so the
 # distribution has to carry their licenses next to it - they cannot live inside the single file.
