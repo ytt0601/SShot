@@ -45,6 +45,24 @@ if (-not (Test-Path $exePath)) {
     throw "Expected output not found: $exePath"
 }
 
+# The exe bundles the .NET runtime, SkiaSharp and the rest of the dependency graph, so the
+# distribution has to carry their licenses next to it - they cannot live inside the single file.
+# THIRD-PARTY-NOTICES.md enumerates what is bundled; licenses/ holds the verbatim upstream texts.
+$noticeFiles = @("LICENSE", "THIRD-PARTY-NOTICES.md")
+foreach ($name in $noticeFiles) {
+    $source = Join-Path $repoRoot $name
+    if (-not (Test-Path $source)) {
+        throw "Required notice file not found: $source"
+    }
+    Copy-Item $source -Destination $outputDir
+}
+
+$licensesSource = Join-Path $repoRoot "licenses"
+if (-not (Test-Path $licensesSource)) {
+    throw "Required notice directory not found: $licensesSource"
+}
+Copy-Item $licensesSource -Destination $outputDir -Recurse
+
 $sizeMb = [Math]::Round((Get-Item $exePath).Length / 1MB, 1)
 Write-Host "Published: $exePath ($sizeMb MB)" -ForegroundColor Green
 Write-Host "Verify manually on a machine without the .NET runtime installed, and confirm Japanese UI text renders correctly (SatelliteResourceLanguages + single-file gotcha)." -ForegroundColor Yellow

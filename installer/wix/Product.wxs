@@ -25,11 +25,18 @@
 
     <Feature Id="MainFeature" Title="SShot" Level="1">
       <ComponentRef Id="AppExecutable" />
+      <ComponentRef Id="LicenseFile" />
+      <ComponentRef Id="ThirdPartyNoticesFile" />
+      <ComponentRef Id="Apache20License" />
+      <ComponentRef Id="DotnetRuntimeNotices" />
+      <ComponentRef Id="SkiaSharpNativeNotices" />
       <ComponentRef Id="ApplicationShortcut" />
     </Feature>
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="SShot" />
+      <Directory Id="INSTALLFOLDER" Name="SShot">
+        <Directory Id="LICENSESFOLDER" Name="licenses" />
+      </Directory>
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
@@ -45,6 +52,34 @@
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="AppExecutable" Guid="*">
         <File Id="SShotAppExe" Source="$(var.PublishDir)\SShot.App.exe" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!--
+      The single-file exe bundles the .NET runtime and every NuGet dependency, so the MIT /
+      Apache-2.0 notices those licenses require have to be installed alongside it. Sourced from
+      the repository rather than the publish output so the repo stays the single source of truth
+      for the notices (build/publish-portable.ps1 copies the same files for the portable ZIP).
+    -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="LicenseFile" Guid="*">
+        <File Id="LicenseTxt" Source="$(var.RepoRoot)\LICENSE" KeyPath="yes" />
+      </Component>
+      <Component Id="ThirdPartyNoticesFile" Guid="*">
+        <File Id="ThirdPartyNoticesMd" Source="$(var.RepoRoot)\THIRD-PARTY-NOTICES.md" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="LICENSESFOLDER">
+      <Component Id="Apache20License" Guid="*">
+        <File Id="Apache20Txt" Source="$(var.RepoRoot)\licenses\Apache-2.0.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="DotnetRuntimeNotices" Guid="*">
+        <File Id="DotnetRuntimeNoticesTxt" Source="$(var.RepoRoot)\licenses\dotnet-runtime-THIRD-PARTY-NOTICES.txt" KeyPath="yes" />
+      </Component>
+      <Component Id="SkiaSharpNativeNotices" Guid="*">
+        <File Id="SkiaSharpNativeNoticesTxt" Source="$(var.RepoRoot)\licenses\skiasharp-native-THIRD-PARTY-NOTICES.txt" KeyPath="yes" />
+        <RemoveFolder Id="RemoveLicensesFolder" Directory="LICENSESFOLDER" On="uninstall" />
       </Component>
     </DirectoryRef>
 
