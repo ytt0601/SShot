@@ -4,7 +4,7 @@ namespace SShot.Core.Settings;
 
 /// <summary>
 /// Parses/formats hotkey bindings as human-editable strings like "Ctrl+Shift+R" (so the JSON
-/// settings file stays hand-editable per CLAUDE.md's settings philosophy). Pure string/enum
+/// settings file stays hand-editable by design). Pure string/enum
 /// logic - no OS hotkey registration here, that's GlobalHotkeyManager (SShot.App).
 /// </summary>
 public static class HotkeyString

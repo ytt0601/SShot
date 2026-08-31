@@ -134,8 +134,6 @@ MSIビルドはポータブル発行の出力を取り込むため、必ずこ�
 - `installer/wix` — WiXインストーラー定義
 - `build/` — 発行用スクリプト
 
-アーキテクチャ上の決定や規約は [CLAUDE.md](./CLAUDE.md) を参照。
-
 ## ライセンス
 
 [MIT License](./LICENSE)

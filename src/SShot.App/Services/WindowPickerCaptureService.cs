@@ -6,7 +6,7 @@ namespace SShot.App.Services;
 
 /// <summary>
 /// Interactive "hover to highlight, click to confirm" window capture. Lives in SShot.App
-/// (not Core) because it creates a WPF Window; Core has no Window/View types (see CLAUDE.md).
+/// (not Core) because it creates a WPF Window; Core has no Window/View types.
 /// </summary>
 public sealed class WindowPickerCaptureService(WindowCaptureService windowCapture) : ICaptureService
 {

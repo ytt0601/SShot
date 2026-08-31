@@ -9,7 +9,7 @@ namespace SShot.App.Services;
 
 /// <summary>
 /// Orchestrates the region-selection overlay windows. Lives in SShot.App (not Core) because
-/// it creates WPF Windows; Core intentionally has no Window/View types (see CLAUDE.md).
+/// it creates WPF Windows; Core intentionally has no Window/View types.
 /// </summary>
 public sealed class RegionCaptureService(IScreenCaptureService screenCapture) : ICaptureService
 {

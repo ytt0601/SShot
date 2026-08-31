@@ -9,7 +9,7 @@ namespace SShot.Core.Capture;
 /// since the actual scroll-to-pixel ratio varies per app/OS setting and can't be assumed) and
 /// stitches the non-overlapping rows into one tall image. Known limitations: sticky
 /// headers/footers get duplicated in every frame unless excluded, animated/parallax content
-/// breaks pixel matching - see CLAUDE.md.
+/// breaks pixel matching.
 /// </summary>
 public static class FrameStitcher
 {

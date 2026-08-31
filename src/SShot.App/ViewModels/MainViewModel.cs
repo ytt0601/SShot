@@ -34,7 +34,7 @@ public partial class MainViewModel(
     private string _statusMessage = string.Empty;
 
     /// <summary>Which content pane the sidebar layout shows (Capture vs. History). Pure view
-    /// state, not domain logic, but kept in the ViewModel per CLAUDE.md's "no logic in View
+    /// state, not domain logic, but kept in the ViewModel under the "no logic in View
     /// code-behind" rule.</summary>
     [ObservableProperty]
     private bool _isHistoryPaneActive;

@@ -40,7 +40,7 @@ public partial class MainWindow : Window, IPrimaryAppWindow
     /// would bake it into the screenshot (the capture services BitBlt the screen directly - see
     /// FullScreenCaptureService/RegionCaptureService, neither hides the caller's window). Mirrors
     /// FloatingToolbarWindow.RunHiddenAsync; view-specific window management, kept out of
-    /// MainViewModel per CLAUDE.md.
+    /// MainViewModel by convention.
     /// </summary>
     private async Task RunHiddenAsync(IAsyncRelayCommand command)
     {

@@ -11,7 +11,7 @@ namespace SShot.App.Hotkeys;
 
 /// <summary>
 /// Thin wrapper over NHotkey.Wpf, chosen over raw RegisterHotKey/HwndSource plumbing for lower
-/// implementation/maintenance cost (see CLAUDE.md). Hotkey strings are parsed via
+/// implementation/maintenance cost. Hotkey strings are parsed via
 /// SShot.Core.Settings.HotkeyString so the same "Ctrl+Shift+R" format is used in settings.json.
 /// </summary>
 public sealed class GlobalHotkeyManager(CaptureGate captureGate)

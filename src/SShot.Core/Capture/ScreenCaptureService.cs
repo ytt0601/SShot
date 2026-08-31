@@ -9,7 +9,7 @@ namespace SShot.Core.Capture;
 /// BitBlt(SRCCOPY | CAPTUREBLT)-based screen capture. CAPTUREBLT ensures layered/transparent
 /// windows (e.g. taskbar blur) are included. Chosen over Windows.Graphics.Capture (WGC) because
 /// WGC shows visible capture chrome and a session-start delay, which is wrong for an instant
-/// screenshot tool. See CLAUDE.md for the full rationale.
+/// screenshot tool.
 /// </summary>
 public sealed class ScreenCaptureService : IScreenCaptureService
 {

@@ -6,7 +6,7 @@ namespace SShot.Core.Settings;
 /// Toggles the HKCU Run key entry. Per-user (not machine-wide) so no admin rights are needed
 /// and the toggle works identically for the portable exe and the installed exe - both the
 /// in-app Settings checkbox and the installer's "launch at startup" checkbox call this same
-/// logic (see CLAUDE.md).
+/// logic.
 /// </summary>
 public sealed class AutoStartService
 {

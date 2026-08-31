@@ -8,7 +8,7 @@ namespace SShot.Core.Tests.Capture;
 /// <summary>
 /// Only the Start/Finish session bookkeeping is covered here: CaptureNextStep drives real
 /// SendInput wheel events (see ScrollSimulator), which would move the developer machine's actual
-/// input state, so the scroll loop itself stays a manual-verification path per CLAUDE.md.
+/// input state, so the scroll loop itself stays a manual-verification path.
 /// </summary>
 public class ScrollingCaptureServiceTests
 {

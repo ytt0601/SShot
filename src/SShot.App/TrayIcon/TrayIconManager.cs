@@ -10,7 +10,7 @@ namespace SShot.App.TrayIcon;
 /// <summary>
 /// Wraps Hardcodet.NotifyIcon.Wpf's TaskbarIcon, chosen over WinForms NotifyIcon interop so the
 /// context menu can be genuine WPF/MVVM-bindable rather than mixing a WinForms message loop into
-/// a pure WPF app (see CLAUDE.md).
+/// a pure WPF app.
 /// </summary>
 public sealed class TrayIconManager : IDisposable
 {

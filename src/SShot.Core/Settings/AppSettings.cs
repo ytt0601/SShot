@@ -10,8 +10,8 @@ public sealed class AppSettings
 
     public bool AutoStartEnabled { get; set; }
 
-    /// <summary>"ja" or "en". Restart-required to apply - see CLAUDE.md for why live switching
-    /// is out of scope for the MVP.</summary>
+    /// <summary>"ja" or "en". Restart-required to apply; live switching is out of scope for
+    /// the MVP.</summary>
     public string UiLanguage { get; set; } = "ja";
 
     public string FullScreenHotkey { get; set; } = "Ctrl+Shift+F";

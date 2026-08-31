@@ -31,3 +31,6 @@ installer/wix/obj/
 
 ## Claude Code local (machine-specific) settings
 .claude/settings.local.json
+
+## Claude Code のローカル作業ガイド(リポジトリには含めない)
+CLAUDE.md

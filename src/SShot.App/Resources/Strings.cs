@@ -7,7 +7,7 @@ namespace SShot.App.Resources;
 /// (not a Visual Studio designer-generated class, since this project is built with the plain
 /// dotnet CLI). XAML references these via {x:Static resources:Strings.SomeKey}, which resolves
 /// at window-construction time - so the UI language is fixed by whatever CultureInfo.CurrentUICulture
-/// is set to in App.OnStartup before any window is created (restart-based switching, see CLAUDE.md).
+/// is set to in App.OnStartup before any window is created (restart-based switching).
 /// </summary>
 public static class Strings
 {

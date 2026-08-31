@@ -7,7 +7,7 @@
     installed and no installation step. SatelliteResourceLanguages (en;ja, set in
     SShot.App.csproj) must be honored correctly even inside the single-file bundle - this is
     an easy-to-miss trap with PublishSingleFile, so verify Japanese strings actually render
-    after publishing (see CLAUDE.md).
+    after publishing.
 #>
 
 param(

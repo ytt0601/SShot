@@ -14,7 +14,7 @@ public sealed class ThemeService
 {
     public void Apply(string themeId)
     {
-        // settings.json is hand-editable by design (see CLAUDE.md) and ThemeCatalog.Ids can shrink
+        // settings.json is hand-editable by design and ThemeCatalog.Ids can shrink
         // across releases, so an unknown id must not be trusted - resolving it to a nonexistent
         // Theme.{id}.xaml pack URI throws, and this runs before any window/tray icon exists.
         if (!ThemeCatalog.Ids.Contains(themeId))

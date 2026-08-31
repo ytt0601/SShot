@@ -63,7 +63,7 @@ public partial class App : Application
 
         // Must happen before any Window/UserControl is constructed - {x:Static Strings.X}
         // resource lookups resolve against CurrentUICulture at construction time, and MVP-scope
-        // localization is restart-based (no live re-switching), see CLAUDE.md.
+        // localization is restart-based (no live re-switching).
         ApplyUiCulture(settings.UiLanguage);
 
         // Also settled before any window is constructed, for the same reason: DynamicResource
